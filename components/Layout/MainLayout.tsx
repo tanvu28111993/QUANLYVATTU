@@ -7,10 +7,10 @@ import { MenuId } from '@/types';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { FULL_WIDTH_MENUS } from '@/utils';
 
-// MainLayout responsibility:
-// 1. Structure the grid (Header, Sidebar, Content)
+// MainLayout Responsibility (SRP):
+// 1. Structure the visual grid (Header, Sidebar, Content)
 // 2. Handle visual transitions (Sidebar collapse, Menu switching)
-// 3. NO business logic (Sync, Shortcuts moved to App.tsx)
+// 3. Delegation: Delegates routing to ContentRouter
 
 export const MainLayout: React.FC = () => {
   const [currentMenu, setCurrentMenu] = useState<MenuId>('OVERVIEW');

@@ -11,12 +11,13 @@ import { useDataSynchronizer, useGlobalShortcuts } from '@/hooks';
 // Đây là nơi lý tưởng để đặt các Global Logic Hooks (Sync, Shortcuts, WebSocket, etc.)
 // thay vì nhét chúng vào UI Layout.
 const AuthenticatedApp: React.FC = () => {
-  // 1. Kích hoạt đồng bộ dữ liệu nền
+  // 1. Kích hoạt đồng bộ dữ liệu nền (Business Logic)
   useDataSynchronizer(true);
 
-  // 2. Kích hoạt phím tắt toàn cục
+  // 2. Kích hoạt phím tắt toàn cục (UI Behavior)
   useGlobalShortcuts();
 
+  // 3. Render giao diện chính
   return <MainLayout />;
 };
 
