@@ -30,7 +30,7 @@ export default defineConfig(({ mode }) => {
           srcDir: '.', 
           filename: 'sw.ts',
           registerType: 'autoUpdate',
-          includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+          // manifestFilename: 'manifest.webmanifest', // Default
           manifest: {
             name: 'QUẢN LÝ VẬT TƯ 1.0.0',
             short_name: 'QLVT',
@@ -40,12 +40,13 @@ export default defineConfig(({ mode }) => {
             display: 'standalone',
             orientation: 'portrait',
             start_url: '/',
+            id: '/',
             icons: [
               {
                 src: 'https://i.postimg.cc/8zF3c24h/image.png',
                 sizes: '192x192',
                 type: 'image/png',
-                purpose: 'any maskable' // Quan trọng: maskable giúp icon hiển thị đẹp trên Android
+                purpose: 'any maskable'
               },
               {
                 src: 'https://i.postimg.cc/8zF3c24h/image.png',

@@ -1,6 +1,14 @@
+
 {
-  "short_name": "QLVT",
   "name": "QUẢN LÝ VẬT TƯ 1.0.0",
+  "short_name": "QLVT",
+  "description": "Hệ thống quản lý kho vật tư chuyên nghiệp trên nền tảng Web PC.",
+  "theme_color": "#0f0f0f",
+  "background_color": "#0f0f0f",
+  "display": "standalone",
+  "orientation": "portrait",
+  "start_url": "/",
+  "id": "/",
   "icons": [
     {
       "src": "https://i.postimg.cc/8zF3c24h/image.png",
@@ -11,12 +19,20 @@
     {
       "src": "https://i.postimg.cc/8zF3c24h/image.png",
       "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "https://i.postimg.cc/8zF3c24h/image.png",
+      "type": "image/png",
       "sizes": "512x512",
       "purpose": "any"
+    },
+    {
+      "src": "https://i.postimg.cc/8zF3c24h/image.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
-  ],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#0f0f0f",
-  "background_color": "#0f0f0f"
+  ]
 }
