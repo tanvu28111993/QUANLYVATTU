@@ -9,6 +9,7 @@
   "orientation": "portrait",
   "start_url": "/",
   "id": "/",
+  "scope": "/",
   "icons": [
     {
       "src": "https://i.postimg.cc/8zF3c24h/image.png",
@@ -19,14 +20,14 @@
     {
       "src": "https://i.postimg.cc/8zF3c24h/image.png",
       "type": "image/png",
-      "sizes": "192x192",
-      "purpose": "maskable"
+      "sizes": "512x512",
+      "purpose": "any"
     },
     {
       "src": "https://i.postimg.cc/8zF3c24h/image.png",
       "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "any"
+      "sizes": "192x192",
+      "purpose": "maskable"
     },
     {
       "src": "https://i.postimg.cc/8zF3c24h/image.png",

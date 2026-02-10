@@ -30,7 +30,7 @@ export default defineConfig(({ mode }) => {
           srcDir: '.', 
           filename: 'sw.ts',
           registerType: 'autoUpdate',
-          // manifestFilename: 'manifest.webmanifest', // Default
+          manifestFilename: 'manifest.json', // Bắt buộc tên file là manifest.json để đồng bộ
           manifest: {
             name: 'QUẢN LÝ VẬT TƯ 1.0.0',
             short_name: 'QLVT',
@@ -41,18 +41,31 @@ export default defineConfig(({ mode }) => {
             orientation: 'portrait',
             start_url: '/',
             id: '/',
+            scope: '/',
             icons: [
               {
                 src: 'https://i.postimg.cc/8zF3c24h/image.png',
                 sizes: '192x192',
                 type: 'image/png',
-                purpose: 'any maskable'
+                purpose: 'any'
               },
               {
                 src: 'https://i.postimg.cc/8zF3c24h/image.png',
                 sizes: '512x512',
                 type: 'image/png',
-                purpose: 'any maskable'
+                purpose: 'any'
+              },
+              {
+                src: 'https://i.postimg.cc/8zF3c24h/image.png',
+                sizes: '192x192',
+                type: 'image/png',
+                purpose: 'maskable'
+              },
+              {
+                src: 'https://i.postimg.cc/8zF3c24h/image.png',
+                sizes: '512x512',
+                type: 'image/png',
+                purpose: 'maskable'
               }
             ]
           },
