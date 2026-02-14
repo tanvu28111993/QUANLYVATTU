@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { useInventoryFormFields } from '../../../hooks/useInventoryFormFields'; 
 import { useInventoryActions } from '../../../hooks/useInventoryActions';
@@ -140,21 +141,27 @@ export const PaperCalculationManager: React.FC = () => {
 
   // --- HELPER: RESET FORM ---
   const handleResetInputs = useCallback(() => {
+    // Clear all input fields
     setQty('');
     setWidth('');
     setLength('');
-    // Giữ nguyên Loại giấy, NSX và GSM để người dùng nhập tiếp
-    // Reset các thông số kỹ thuật về mặc định
+    setGsm('');
+    setPaperType('');
+    setManufacturer('');
+    
+    // Reset technical parameters to defaults
     setTrimMargin('2');
     setWastePercentage('0.25'); 
     setGrainDirection('FREE');
-    addToast('Đã xóa thông số nhập liệu', 'info', 1000);
-    // Focus lại vào ô Số lượng (index 4)
+    
+    addToast('Đã xóa toàn bộ thông số', 'info', 1000);
+    
+    // Focus back to the first input (Paper Type - index 0)
     setTimeout(() => {
-        const qtyInput = inputsRef.current[4];
-        if (qtyInput) (qtyInput as HTMLElement).focus();
+        const firstInput = inputsRef.current[0];
+        if (firstInput) (firstInput as HTMLElement).focus();
     }, 50);
-  }, [setQty, setWidth, setLength, setTrimMargin, setWastePercentage, setGrainDirection, addToast]);
+  }, [setQty, setWidth, setLength, setGsm, setPaperType, setManufacturer, setTrimMargin, setWastePercentage, setGrainDirection, addToast]);
 
   // --- LOGIC: FILTER MANUFACTURERS BASED ON SELECTED PAPER TYPE ---
   const availableManufacturers = useMemo(() => {
@@ -228,7 +235,7 @@ export const PaperCalculationManager: React.FC = () => {
             <button 
                 onClick={handleResetInputs}
                 className="p-2 -mr-2 text-gray-500 hover:text-white hover:bg-white/10 rounded-full transition-all"
-                title="Xóa nhanh (Giữ lại Loại giấy/GSM/NSX)"
+                title="Xóa toàn bộ thông số"
             >
                 <RotateCcw className="w-4 h-4" />
             </button>
