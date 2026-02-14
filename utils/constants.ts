@@ -2,26 +2,25 @@
 /// <reference types="vite/client" />
 
 // Cấu hình API
-// Sử dụng try-catch để an toàn khi truy cập import.meta.env trong trường hợp build lỗi
+const FALLBACK_URL = 'https://script.google.com/macros/s/AKfycbzksG9x1T4cweYZyr7lYwKG7x0T2SoFHdvWVaCsweXWF1uYZ1g7hzGXNYm3RAHZkfLD/exec';
+
 let envUrl: string | undefined;
 try {
-  // Biến này sẽ được Vite thay thế bằng chuỗi (nếu define hoạt động)
-  // hoặc runtime sẽ đọc từ object import.meta.env
-  envUrl = import.meta.env.VITE_API_URL;
-} catch {
+  // Vite replaces this during build
+  // Cast import.meta to any to bypass missing type definitions for ImportMeta.env in the execution environment
+  envUrl = (import.meta as any).env?.VITE_API_URL;
+} catch (e) {
   envUrl = undefined;
 }
 
-const ENV_URL = envUrl;
-
-// Hardcoded fallback - URL này phải luôn là bản Deploy mới nhất của Google Apps Script
-const FALLBACK_URL = 'https://script.google.com/macros/s/AKfycbzksG9x1T4cweYZyr7lYwKG7x0T2SoFHdvWVaCsweXWF1uYZ1g7hzGXNYm3RAHZkfLD/exec';
-
-export const API_URL = (typeof ENV_URL === 'string' && ENV_URL.startsWith('http')) 
-  ? ENV_URL 
+export const API_URL = (typeof envUrl === 'string' && envUrl.startsWith('http')) 
+  ? envUrl 
   : FALLBACK_URL;
 
-console.log(`[System] API Endpoint: ${API_URL.substring(0, 40)}...`);
+// Log to console so developer can see which URL is being hit in Production
+if (typeof window !== 'undefined') {
+  console.log(`[System] Connected to API: ${API_URL.split('/s/')[0]}...`);
+}
 
 // Cấu hình UI
 export const FULL_WIDTH_MENUS = [
@@ -46,6 +45,7 @@ export const GLOBAL_EVENTS = {
 
 export const QUERY_KEYS = {
   INVENTORY: ['inventory'],
+  METADATA: ['metadata'],
 };
 
 export const DB_CONFIG = {

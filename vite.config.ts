@@ -5,7 +5,8 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, process.cwd(), '');
+    // Cast process to any to access cwd() in restricted type environments where @types/node might be missing
+    const env = loadEnv(mode, (process as any).cwd(), '');
     return {
       server: {
         port: 3000,
