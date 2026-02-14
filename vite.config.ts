@@ -12,13 +12,15 @@ export default defineConfig(({ mode }) => {
         host: '0.0.0.0',
       },
       build: {
+        target: 'esnext',
+        minify: 'esbuild',
         rollupOptions: {
           output: {
             manualChunks: {
-              'vendor-react': ['react', 'react-dom'],
-              'vendor-ui': ['lucide-react'], 
-              'vendor-data': ['@tanstack/react-query', 'zustand', 'idb-keyval'],
-              'vendor-forms': ['react-hook-form', 'zod', '@hookform/resolvers']
+              'react-vendor': ['react', 'react-dom'],
+              'query-vendor': ['@tanstack/react-query', '@tanstack/react-query-persist-client'],
+              'storage-vendor': ['zustand', 'idb-keyval'],
+              'ui-vendor': ['lucide-react']
             }
           }
         }
@@ -26,19 +28,19 @@ export default defineConfig(({ mode }) => {
       plugins: [
         react(),
         VitePWA({
-          strategies: 'injectManifest', // Chế độ thủ công với file sw.ts
+          strategies: 'injectManifest',
           srcDir: '.', 
           filename: 'sw.ts',
           registerType: 'autoUpdate',
-          manifestFilename: 'manifest.json', // Bắt buộc tên file là manifest.json để đồng bộ
+          manifestFilename: 'manifest.json',
           manifest: {
-            name: 'QUẢN LÝ VẬT TƯ 1.0.0',
-            short_name: 'QLVT',
-            description: 'Hệ thống quản lý kho vật tư chuyên nghiệp trên nền tảng Web PC.',
+            name: 'HỆ THỐNG QUẢN LÝ KHO TUẤN BẰNG',
+            short_name: 'QLVT-TB',
+            description: 'Quản lý kho vật tư & giấy chuyên nghiệp cho PC Desktop',
             theme_color: '#0f0f0f',
             background_color: '#0f0f0f',
             display: 'standalone',
-            orientation: 'portrait',
+            orientation: 'any',
             start_url: '/',
             id: '/',
             scope: '/',
@@ -77,18 +79,11 @@ export default defineConfig(({ mode }) => {
       ],
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
       },
       resolve: {
         alias: {
           '@': path.resolve('.'),
         }
-      },
-      // @ts-ignore
-      test: {
-        globals: true,
-        environment: 'jsdom',
-        setupFiles: [],
       }
     };
 });

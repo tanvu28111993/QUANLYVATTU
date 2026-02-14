@@ -1,55 +1,68 @@
-/* Custom Scrollbar Styles */
+
+/* Custom Scrollbar Styles - PC Optimized */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #1a1a1a; 
+  background: #0f0f0f; 
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #444; 
-  border-radius: 4px;
+  background: #2a2a2a; 
+  border-radius: 5px;
+  border: 2px solid #0f0f0f;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #DA291C; 
 }
 
-/* Global Animation Utilities */
+/* Animations */
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(5px); }
+  from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fade-in {
-  animation: fade-in 0.3s ease-out forwards;
+  animation: fade-in 0.2s ease-out forwards;
 }
 
-@keyframes progress-indeterminate {
-  0% { transform: translateX(-100%) scaleX(0.2); }
-  50% { transform: translateX(0%) scaleX(0.5); }
-  100% { transform: translateX(100%) scaleX(0.2); }
+@keyframes progress-loading {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
-.animate-progress-indeterminate {
-  animation: progress-indeterminate 1.5s infinite linear;
-  width: 100%;
-  transform-origin: left;
+.animate-progress-loading {
+  animation: progress-loading 1.2s infinite ease-in-out;
 }
 
-@keyframes slide-in-right {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+/* Table Specific Fixes */
+.custom-scrollbar {
+  scrollbar-gutter: stable;
 }
 
-.animate-slide-in-right {
-  animation: slide-in-right 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+table {
+  border-spacing: 0;
+  border-collapse: separate;
 }
 
-/* Utility Class cho Scrollbar trong các thẻ div cụ thể */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* Zero-copy rendering hint */
+tr {
+  contain: content;
+}
+
+/* PWA Splash prevention */
+html, body {
+  height: 100%;
+  margin: 0;
+  background-color: #0f0f0f;
+  color: #fff;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
