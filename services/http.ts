@@ -1,3 +1,4 @@
+
 import { API_URL } from '../utils/constants';
 
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -7,27 +8,29 @@ export const HttpService = {
     try {
       const response = await fetch(url, options);
       
-      // Check for HTML response which indicates an API error (e.g. 404, Auth page, Google Script Error)
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.includes("text/html")) {
-         // Consume the text to keep the stream clean, and throw a descriptive error
          const text = await response.text();
-         console.error("API returned HTML instead of JSON:", text.substring(0, 500));
-         throw new Error(`API Configuration Error: Endpoint returned HTML (Status ${response.status}). Check API_URL.`);
+         console.error("API returned HTML instead of JSON. Possible redirection or script error.");
+         throw new Error(`Lỗi cấu hình: Backend trả về HTML thay vì JSON. Vui lòng kiểm tra lại quyền truy cập (Anyone) của Google Script.`);
       }
 
-      // Nếu gặp lỗi server (5xx) hoặc quá nhiều request (429), thử lại
       if (!response.ok && (response.status >= 500 || response.status === 429)) {
-         throw new Error(`Server Error: ${response.status}`);
+         throw new Error(`Lỗi máy chủ: ${response.status}`);
       }
       return response;
     } catch (err) {
       if (retries > 0) {
         console.warn(`Fetch failed. Retrying in ${backoff}ms... (${retries} left)`);
         await wait(backoff);
-        return HttpService.fetchWithRetry(url, options, retries - 1, backoff * 2); // Exponential backoff
+        return HttpService.fetchWithRetry(url, options, retries - 1, backoff * 2);
       }
-      throw err;
+      
+      // Detailed error for production debugging
+      const errorMessage = err instanceof Error ? err.message : 'Unknown network error';
+      throw new Error(`Không thể kết nối máy chủ backend. 
+        \n- URL: ${url.substring(0, 50)}...
+        \n- Chi tiết: ${errorMessage}`);
     }
   },
 
