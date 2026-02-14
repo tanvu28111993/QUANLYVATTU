@@ -27,9 +27,10 @@ export const COL = {
   TRANSACTION_TYPE: 19 
 };
 
-// --- PURE LOGIC FUNCTIONS (Exported for Unit Testing) ---
+// --- PURE LOGIC FUNCTIONS (Exported for Unit Testing ONLY) ---
+// Note: These are NOT used in the Worker anymore to avoid minification issues.
+// We keep them here for Unit Tests.
 
-// Helper: Xóa dấu Tiếng Việt để tìm kiếm (Optimized)
 export const removeVietnameseTones = (str: string): string => {
     if (!str) return '';
     return str
@@ -72,7 +73,6 @@ export const formatDateTime = (val: unknown): string => {
 
 export const transformData = (rawData: any[][]): InventoryItem[] => {
     if (Array.isArray(rawData) && rawData.length > 0 && Array.isArray(rawData[0])) {
-         // Note: Inside worker execution, COL/formatDate are injected into scope
          return rawData.map((row) => ({
           sku: String(row[COL.SKU]),
           purpose: String(row[COL.PURPOSE]),
@@ -101,27 +101,18 @@ export const transformData = (rawData: any[][]): InventoryItem[] => {
 
 export const mergeInventory = (currentData: InventoryItem[], newItems: InventoryItem[]): InventoryItem[] => {
     const itemMap = new Map<string, InventoryItem>();
-    
-    // 1. Add existing items
     if (Array.isArray(currentData)) {
         for (let i = 0; i < currentData.length; i++) {
             const item = currentData[i];
-            if (item && item.sku) {
-                itemMap.set(item.sku, item);
-            }
+            if (item && item.sku) itemMap.set(item.sku, item);
         }
     }
-    
-    // 2. Merge new items (update/insert)
     if (Array.isArray(newItems)) {
         for (let i = 0; i < newItems.length; i++) {
             const item = newItems[i];
-            if (item && item.sku) {
-                itemMap.set(item.sku, item);
-            }
+            if (item && item.sku) itemMap.set(item.sku, item);
         }
     }
-    
     return Array.from(itemMap.values());
 };
 
@@ -144,32 +135,136 @@ export const parseDateToTimestamp = (val: unknown): number => {
 };
 
 // --- WORKER CONSTRUCTION ---
-// We inject the functions source code into the worker blob.
+// Fix: We define functions directly inside the string to prevent Production Build Minification renaming issues.
+// Previously, .toString() on minified functions caused reference errors inside the worker (e.g. calling 'a(x)' instead of 'formatDate(x)').
 export const WORKER_CODE = `
 /* eslint-disable no-restricted-globals */
 
-// 1. INJECTED CONSTANTS & FUNCTIONS
+// 1. CONSTANTS
 const COL = ${JSON.stringify(COL)};
-const formatDate = ${formatDate.toString()};
-const formatDateTime = ${formatDateTime.toString()};
-const transformData = ${transformData.toString()};
-const mergeInventory = ${mergeInventory.toString()};
-const parseDateToTimestamp = ${parseDateToTimestamp.toString()};
-const removeVietnameseTones = ${removeVietnameseTones.toString()};
 
-// 2. WORKER STATE
+// 2. HELPER FUNCTIONS (DEFINED EXPLICITLY TO SURVIVE MINIFICATION)
+const removeVietnameseTones = (str) => {
+    if (!str) return '';
+    return str
+        .normalize('NFD')
+        .replace(/[\\u0300-\\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'D');
+};
+
+const formatDate = (val) => {
+  if (!val) return "";
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return String(val);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return \`\${day}/\${month}/\${year}\`;
+  } catch (e) {
+    return String(val);
+  }
+};
+
+const formatDateTime = (val) => {
+  if (!val) return "";
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return String(val);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    const s = String(d.getSeconds()).padStart(2, '0');
+    return \`\${day}/\${month}/\${year} \${h}:\${m}:\${s}\`;
+  } catch (e) {
+    return String(val);
+  }
+};
+
+const parseDateToTimestamp = (val) => {
+    if (!val || typeof val !== 'string') return -1;
+    const parts = val.trim().split(' ');
+    const dateParts = parts[0].split('/');
+    if (dateParts.length !== 3) return -1;
+    const day = parseInt(dateParts[0], 10);
+    const month = parseInt(dateParts[1], 10);
+    const year = parseInt(dateParts[2], 10);
+    let hour = 0, minute = 0, second = 0;
+    if (parts[1]) {
+        const timeParts = parts[1].split(':');
+        if (timeParts[0]) hour = parseInt(timeParts[0], 10);
+        if (timeParts[1]) minute = parseInt(timeParts[1], 10);
+        if (timeParts[2]) second = parseInt(timeParts[2], 10);
+    }
+    return new Date(year, month - 1, day, hour, minute, second).getTime();
+};
+
+const transformData = (rawData) => {
+    if (Array.isArray(rawData) && rawData.length > 0 && Array.isArray(rawData[0])) {
+         return rawData.map((row) => ({
+          sku: String(row[COL.SKU]),
+          purpose: String(row[COL.PURPOSE]),
+          packetCode: String(row[COL.PACKET_CODE]),
+          paperType: String(row[COL.PAPER_TYPE]),
+          gsm: String(row[COL.GSM] || ""),
+          supplier: String(row[COL.SUPPLIER]),
+          manufacturer: String(row[COL.MANUFACTURER]),
+          importDate: formatDate(row[COL.IMPORT_DATE]),
+          productionDate: formatDate(row[COL.PRODUCTION_DATE]),
+          length: Number(row[COL.LENGTH]),
+          width: Number(row[COL.WIDTH]),
+          weight: Number(row[COL.WEIGHT]),
+          quantity: Number(row[COL.QUANTITY]),
+          orderCustomer: String(row[COL.ORDER_CUSTOMER]),
+          materialCode: String(row[COL.MATERIAL_CODE]),
+          location: String(row[COL.LOCATION]),
+          pendingOut: String(row[COL.PENDING_OUT] || ""),
+          importer: String(row[COL.IMPORTER]),
+          lastUpdated: formatDateTime(row[COL.LAST_UPDATED]),
+          transactionType: row[COL.TRANSACTION_TYPE]
+        }));
+      }
+      return rawData;
+};
+
+const mergeInventory = (currentData, newItems) => {
+    const itemMap = new Map();
+    // 1. Add existing items
+    if (Array.isArray(currentData)) {
+        for (let i = 0; i < currentData.length; i++) {
+            const item = currentData[i];
+            if (item && item.sku) {
+                itemMap.set(item.sku, item);
+            }
+        }
+    }
+    // 2. Merge new items
+    if (Array.isArray(newItems)) {
+        for (let i = 0; i < newItems.length; i++) {
+            const item = newItems[i];
+            if (item && item.sku) {
+                itemMap.set(item.sku, item);
+            }
+        }
+    }
+    return Array.from(itemMap.values());
+};
+
+// 3. WORKER STATE
 let cachedInventory = [];
 let lastFilteredResult = [];
 
 // Encoder for Transferable Objects
 const encoder = new TextEncoder();
 
-// Helper to send data using Transferable Objects (Zero-Copy-ish)
+// Helper to send data
 const postResult = (action, result, extras = {}) => {
     try {
         const jsonString = JSON.stringify(result);
         const encoded = encoder.encode(jsonString);
-        // Transfer the buffer ownership to Main Thread
         self.postMessage(
             { action, resultBuffer: encoded.buffer, ...extras }, 
             [encoded.buffer]
@@ -180,7 +275,7 @@ const postResult = (action, result, extras = {}) => {
     }
 };
 
-// 3. EXPORT LOGIC (Formatters)
+// 4. EXPORT LOGIC
 const numberFormatter = new Intl.NumberFormat('vi-VN');
 
 const generateCSV = (data, columns) => {
@@ -210,7 +305,7 @@ const generateCSV = (data, columns) => {
     return BOM + headers + "\\n" + rows;
 };
 
-// 4. MESSAGE HANDLER
+// 5. MESSAGE HANDLER
 self.onmessage = (e) => {
   const { 
     action,
@@ -228,7 +323,6 @@ self.onmessage = (e) => {
   if (action === 'TRANSFORM') {
     try {
         const result = transformData(rawData);
-        // Use Transferable Object
         postResult('TRANSFORM_RESULT', result);
     } catch (err) {
         self.postMessage({ action: 'TRANSFORM_RESULT', result: [], error: err.message });
@@ -240,7 +334,6 @@ self.onmessage = (e) => {
   if (action === 'MERGE_DATA') {
       try {
         const result = mergeInventory(currentData, newItems);
-        // Use Transferable Object
         postResult('MERGE_RESULT', result);
       } catch (err) {
         self.postMessage({ action: 'MERGE_RESULT', result: [], error: err.message });
@@ -299,7 +392,6 @@ self.onmessage = (e) => {
 
         if (!searchTerm) return true;
 
-        // --- IMPROVED SEARCH LOGIC (Accent Insensitive) ---
         const normalize = (str) => removeVietnameseTones(String(str).toLowerCase().trim());
         const cleanSearchTerm = normalize(searchTerm);
         const searchTerms = cleanSearchTerm.split(';').map((t) => t.trim()).filter((t) => t !== '');
@@ -357,7 +449,6 @@ self.onmessage = (e) => {
 
       const totalWeight = sorted.reduce((sum, item) => sum + (Number(item.weight) || 0), 0) / 1000;
       
-      // Use Transferable Object for Filter Result
       postResult('FILTER_RESULT', sorted, { totalWeight });
   }
 };

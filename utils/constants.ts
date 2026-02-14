@@ -1,6 +1,4 @@
 
-/// <reference types="vite/client" />
-
 // Cấu hình API
 const FALLBACK_URL = 'https://script.google.com/macros/s/AKfycbzksG9x1T4cweYZyr7lYwKG7x0T2SoFHdvWVaCsweXWF1uYZ1g7hzGXNYm3RAHZkfLD/exec';
 
