@@ -1,0 +1,460 @@
+
+// --- CẤU HÌNH ---
+var ID_SHEET_DANG_NHAP = "14FafF1F1BHh87-KLs4mIyfzmJnvyVxNchi358t-6DVc"; 
+var ID_SHEET_KHO = "1DSg_2nJoPkAfudCy4QnHBEbvKhwHm-j6Cd9CK_cwfkg";
+var ID_SHEET_DANHMUC = "1mn8QLCcgmCUKKckGXIyRcghDnPPtBAgjuGsVLJaDTF4"; 
+var ID_SHEET_LICH = "11FIvb9hXe98TYOg6X4REjQyrgzdLOBfXOCM-gLIUVdA";
+
+// External History Sheets
+var ID_SHEET_XUAT = "1ztt84ZUrGk1NlhjmbdAIm6tjlGHZBRDMPgOEQi24CUw";
+var ID_SHEET_NHAP = "1hmmrdoyEVPS0EIPGH5_PZjzVqN-gUfrP1Q73W6ck9b0";
+var ID_SHEET_SKUN = "1HfJ6c48d0BhIsdKdCIZdq6JOBC7UHrszv-A8eI45ORM"; 
+
+// --- CACHE CONFIG ---
+var CACHE_EXPIRATION_SEC = 300; 
+var CACHE_KEY_PREFIX = "INVENTORY_CHUNK_";
+var CACHE_META_KEY = "INVENTORY_META";
+
+// Helper để parse params từ Event
+function getParams(e) {
+  var params = e.parameter || {};
+  if (e.postData && e.postData.contents) {
+    try {
+      var jsonBody = JSON.parse(e.postData.contents);
+      for (var key in jsonBody) {
+        params[key] = jsonBody[key];
+      }
+    } catch (err) {}
+  }
+  return params;
+}
+
+function doGet(e) {
+  try {
+    var params = getParams(e);
+    return routeRequest(params);
+  } catch (err) {
+    return responseJSON({ error: "Global Error: " + err.message });
+  }
+}
+
+function doPost(e) {
+  try {
+    var params = getParams(e);
+    // Read-only mode: No batch processing or updates allowed via POST for now, 
+    // unless it's a read operation disguised as POST (though typically GET is used for reads).
+    // We route everything through the same router.
+    return routeRequest(params);
+  } catch (err) {
+    return responseJSON({ error: "Global Error: " + err.message });
+  }
+}
+
+// Router điều hướng request
+function routeRequest(params) {
+  var action = params.action ? String(params.action).trim() : "";
+  
+  if (action == 'login') return handleLogin(params);
+  if (action == 'getInventory') return handleGetInventory(params);
+  if (action == 'getHistory') return handleGetHistory(params); 
+  if (action == 'getMetaData') return handleGetMetaData(); 
+  if (action == 'updateMetaData') return handleUpdateMetaData(params);
+  if (action == 'checkVersion') return handleCheckVersion();
+  if (action == 'getSchedule') return handleGetSchedule();
+  if (action == 'saveSchedule') return handleSaveSchedule(params);
+  if (action == 'batch') return handleBatch(params);
+  if (action == 'ping') return responseJSON({ success: true, message: "Pong", time: Date.now() });
+  if (action == 'checkHealth') return handleCheckHealth();
+  
+  return responseJSON({ error: "Invalid action or Read-Only Mode: " + action });
+}
+
+function handleBatch(params) {
+  // Read-only optimization: Immediately return success
+  return responseJSON({ success: true, message: "Read-only mode: Batch processed (simulated)" });
+}
+
+function handleImport(payload) {
+    return { success: true };
+}
+
+function handleUpdate(payload) {
+    return { success: true };
+}
+
+function handleUpdateMetaData(params) {
+    return responseJSON({ success: true, message: "Read-only mode: Metadata updated (simulated)" });
+}
+
+function handleSaveSchedule(params) {
+    return responseJSON({ success: true, message: "Read-only mode: Schedule saved (simulated)" });
+}
+
+
+function handleCheckHealth() {
+  var status = {};
+  var ids = {
+    "DANG_NHAP": ID_SHEET_DANG_NHAP,
+    "KHO": ID_SHEET_KHO,
+    "DANHMUC": ID_SHEET_DANHMUC,
+    "LICH": ID_SHEET_LICH,
+    "XUAT": ID_SHEET_XUAT,
+    "NHAP": ID_SHEET_NHAP,
+    "SKUN": ID_SHEET_SKUN
+  };
+  
+  for (var key in ids) {
+    try {
+      var ss = SpreadsheetApp.openById(ids[key]);
+      status[key] = "OK - " + ss.getName();
+    } catch (e) {
+      status[key] = "ERROR - " + e.message;
+    }
+  }
+  
+  return responseJSON({ success: true, status: status });
+}
+
+function handleGetMetaData() {
+  try {
+    var ss = SpreadsheetApp.openById(ID_SHEET_DANHMUC);
+    
+    var readSheet = function(sheetName, numCols) {
+      var sheet = ss.getSheetByName(sheetName);
+      
+      // Fallback: Case-insensitive and space-insensitive search
+      if (!sheet) {
+          var sheets = ss.getSheets();
+          for (var i = 0; i < sheets.length; i++) {
+              var name = sheets[i].getName();
+              // Normalize: Remove spaces, uppercase
+              if (name.toUpperCase().replace(/\s/g, '') === sheetName.toUpperCase().replace(/\s/g, '')) {
+                  sheet = sheets[i];
+                  break;
+              }
+          }
+      }
+
+      if (!sheet) return [];
+      var lastRow = sheet.getLastRow();
+      if (lastRow < 2) return []; 
+      var data = sheet.getRange(2, 1, lastRow - 1, numCols).getValues();
+      return data.filter(function(row) { return row[0] && String(row[0]).trim() !== ""; });
+    };
+
+    // Debug: List all sheet names
+    var allSheetNames = ss.getSheets().map(function(s) { return s.getName(); });
+
+    var data = {
+      loaiNhap: readSheet("LOAINHAP", 2),
+      kienGiay: readSheet("KIENGIAY", 2),
+      loaiGiay: readSheet("GIAY", 2),
+      loaiVt: readSheet("LOAIVT", 2), 
+      ncc: readSheet("NCC2", 3), 
+      nsx: readSheet("NSX", 1),
+      debugSheets: allSheetNames // Return list of sheets for debugging
+    };
+
+    return responseJSON({ success: true, data: data });
+  } catch (err) {
+    return responseJSON({ success: false, message: err.message, data: {} });
+  }
+}
+
+function handleLogin(params) {
+  var username = params.username;
+  var password = params.password;
+  
+  if (!username || !password) return responseJSON({ success: false, message: "Thiếu thông tin" });
+
+  var ss = SpreadsheetApp.openById(ID_SHEET_DANG_NHAP);
+  var sheet = ss.getSheetByName("DN"); // Assuming the sheet name is still "DN" or default
+  if (!sheet) sheet = ss.getSheets()[0]; // Fallback to first sheet if DN not found
+
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return responseJSON({ success: false, message: "Lỗi hệ thống hoặc chưa có dữ liệu user" });
+  
+  var data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+  for (var i = 0; i < data.length; i++) {
+    // Basic auth check
+    if (String(data[i][0]) == username && String(data[i][1]) == password) {
+      return responseJSON({ success: true, user: { username: username } });
+    }
+  }
+  return responseJSON({ success: false, message: "Sai tài khoản/mật khẩu" });
+}
+
+function handleCheckVersion() {
+  var ss = SpreadsheetApp.openById(ID_SHEET_KHO);
+  var sheet = ss.getSheetByName("KHO");
+  var lastRow = sheet.getLastRow();
+  var version = "0_0";
+  if (lastRow > 1) {
+    var lastUpdateCell = sheet.getRange(lastRow, 19).getValue(); 
+    version = lastRow + "_" + lastUpdateCell;
+  }
+  return responseJSON({ version: version });
+}
+
+function parseDateStr(dateStr) {
+    if (!dateStr || typeof dateStr !== 'string') return 0;
+    try {
+        var parts = dateStr.trim().split(' '); 
+        if (parts.length === 0) return 0;
+        var dateParts = parts[0].split('/');
+        if (dateParts.length < 3) return 0;
+        var day = +dateParts[0]; 
+        var month = +dateParts[1] - 1; 
+        var year = +dateParts[2];
+        var hours = 0, minutes = 0, seconds = 0;
+        if (parts.length > 1) {
+            var timeParts = parts[1].split(':');
+            if (timeParts.length >= 2) {
+                hours = +timeParts[0];
+                minutes = +timeParts[1];
+                if (timeParts.length > 2) seconds = +timeParts[2];
+            }
+        }
+        return new Date(year, month, day, hours, minutes, seconds).getTime();
+    } catch (e) { return 0; }
+}
+
+function extractTimeFromRow(rawStr) {
+  if (!rawStr || rawStr.length < 10) return 0;
+  var lastPipeIndex = rawStr.lastIndexOf('|');
+  if (lastPipeIndex === -1) return 0;
+  var dateStr = rawStr.substring(lastPipeIndex + 1);
+  return parseDateStr(dateStr) || Date.parse(dateStr) || 0;
+}
+
+function handleGetHistory(params) {
+  try {
+    var filterStart = params.startDate ? parseInt(params.startDate) : 0;
+    var filterEnd = params.endDate ? parseInt(params.endDate) : 0;
+    var page = parseInt(params.page) || 1;
+    var pageSize = parseInt(params.pageSize) || 10000; 
+    
+    var historyData = [];
+
+    var fetchAndFilterSheet = function(sheetId, sheetName, transactionType) {
+      try {
+        var ss = SpreadsheetApp.openById(sheetId);
+        var sheet = ss.getSheetByName(sheetName); 
+        if (!sheet) return [];
+        var lastRow = sheet.getLastRow();
+        if (lastRow < 2) return [];
+        var data = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+        var len = data.length;
+        if (len === 0) return [];
+
+        var startIndex = -1;
+        var l = 0, r = len - 1;
+        while (l <= r) {
+          var mid = Math.floor((l + r) / 2);
+          var rowTime = extractTimeFromRow(String(data[mid][0]));
+          if (rowTime >= filterStart) {
+            startIndex = mid;
+            r = mid - 1;
+          } else {
+            l = mid + 1;
+          }
+        }
+        if (startIndex === -1) return [];
+
+        var result = [];
+        for (var i = startIndex; i < len; i++) {
+          var rawCell = String(data[i][0]);
+          var rowTime = extractTimeFromRow(rawCell);
+          if (rowTime > filterEnd) break;
+          var parts = rawCell.split('|');
+          var cleanRow = parts.map(function(p) { return p ? p.trim() : ""; });
+          cleanRow.push(transactionType);
+          result.push(cleanRow);
+        }
+        return result;
+      } catch (e) { return []; }
+    };
+
+    var startYear = new Date(filterStart).getFullYear();
+    var endYear = new Date(filterEnd).getFullYear();
+    var currentYear = new Date().getFullYear();
+    if (isNaN(startYear)) startYear = currentYear;
+    if (isNaN(endYear)) endYear = currentYear;
+    if (endYear - startYear > 3) startYear = endYear - 3;
+
+    for (var year = startYear; year <= endYear; year++) {
+        var xuatSheetName = "XUAT_" + year;
+        var nhapSheetName = "NHAP_" + year;
+        historyData = historyData.concat(fetchAndFilterSheet(ID_SHEET_XUAT, xuatSheetName, 'EXPORT'));
+        historyData = historyData.concat(fetchAndFilterSheet(ID_SHEET_NHAP, nhapSheetName, 'IMPORT'));
+    }
+
+    historyData.sort(function(a, b) {
+        var idxA = a.length - 2; 
+        var idxB = b.length - 2;
+        var valA = idxA >= 0 ? a[idxA] : "";
+        var valB = idxB >= 0 ? b[idxB] : "";
+        var dateA = typeof valA === 'string' ? (parseDateStr(valA) || Date.parse(valA) || 0) : 0;
+        var dateB = typeof valB === 'string' ? (parseDateStr(valB) || Date.parse(valB) || 0) : 0;
+        return dateA - dateB; 
+    });
+
+    var totalRecords = historyData.length;
+    var totalPages = Math.ceil(totalRecords / pageSize);
+    var startIndex = (page - 1) * pageSize;
+    var pagedData = historyData.slice(startIndex, startIndex + pageSize);
+
+    return responseJSON({
+      success: true,
+      data: pagedData,
+      pagination: {
+        page: page,
+        pageSize: pageSize,
+        total: totalRecords,
+        totalPages: totalPages
+      }
+    });
+
+  } catch (error) {
+    return responseJSON({ error: error.message });
+  }
+}
+
+function getCachedData() {
+  try {
+    var cache = CacheService.getScriptCache();
+    var meta = cache.get(CACHE_META_KEY);
+    if (!meta) return null;
+    var metaObj = JSON.parse(meta);
+    var rawData = [];
+    for (var i = 0; i < metaObj.chunks; i++) {
+      var chunk = cache.get(CACHE_KEY_PREFIX + i);
+      if (!chunk) return null; 
+      rawData = rawData.concat(JSON.parse(chunk));
+    }
+    return rawData;
+  } catch (e) { return null; }
+}
+
+function setCachedData(data) {
+  try {
+    var cache = CacheService.getScriptCache();
+    var arrayChunkSize = 1000; 
+    var totalChunks = Math.ceil(data.length / arrayChunkSize);
+    var cacheObject = {};
+    for (var k = 0; k < totalChunks; k++) {
+      var slice = data.slice(k * arrayChunkSize, (k + 1) * arrayChunkSize);
+      cacheObject[CACHE_KEY_PREFIX + k] = JSON.stringify(slice);
+    }
+    cacheObject[CACHE_META_KEY] = JSON.stringify({ chunks: totalChunks });
+    cache.putAll(cacheObject, CACHE_EXPIRATION_SEC);
+  } catch (e) {}
+}
+
+function handleGetInventory(params) {
+  var rawData = getCachedData();
+  var isFromCache = true;
+
+  if (!rawData) {
+    var ss = SpreadsheetApp.openById(ID_SHEET_KHO);
+    var sheet = ss.getSheetByName("KHO");
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return responseJSON({ data: [], serverTimestamp: Date.now() });
+    rawData = sheet.getRange(2, 1, lastRow - 1, 19).getValues();
+    setCachedData(rawData);
+    isFromCache = false;
+  }
+
+  var lastClientTime = Number(params.lastUpdated) || 0;
+  var optimizedData = [];
+  var len = rawData.length;
+  var maxTimestamp = 0; 
+
+  for (var i = 0; i < len; i++) {
+    var row = rawData[i];
+    if (!row[0]) continue; 
+    var rowTime = 0;
+    var lastUpdatedVal = row[18];
+    if (typeof lastUpdatedVal === 'string' && lastUpdatedVal.includes('T')) {
+        rowTime = new Date(lastUpdatedVal).getTime();
+    } else if (lastUpdatedVal instanceof Date) {
+        rowTime = lastUpdatedVal.getTime();
+    } else if (typeof lastUpdatedVal === 'string' && lastUpdatedVal.trim() !== "") {
+        rowTime = new Date(lastUpdatedVal).getTime();
+    }
+    if (!isNaN(rowTime) && rowTime > maxTimestamp) maxTimestamp = rowTime;
+
+    if (rowTime > lastClientTime) {
+      optimizedData.push([
+        String(row[0]), String(row[1]), String(row[2]), String(row[3]), String(row[4] || ""),
+        String(row[5]), String(row[6]), row[7], row[8], Number(row[9]) || 0,
+        Number(row[10]) || 0, Number(row[11]) || 0, Number(row[12]) || 0, String(row[13]),
+        String(row[14]), String(row[15]), String(row[16] || ""), String(row[17]), row[18]
+      ]);
+    }
+  }
+  if (maxTimestamp === 0) maxTimestamp = Date.now();
+  return responseJSON({
+    serverTimestamp: maxTimestamp,
+    data: optimizedData,
+    cached: isFromCache 
+  });
+}
+
+function handleGetSchedule() {
+  try {
+    var ss = SpreadsheetApp.openById(ID_SHEET_LICH);
+    var sheet = ss.getSheetByName("LICH");
+    if (!sheet) return responseJSON({ success: true, data: [] });
+
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return responseJSON({ success: true, data: [] });
+
+    // Read column A only
+    var data = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    var scheduleItems = [];
+
+    for (var i = 0; i < data.length; i++) {
+      var raw = String(data[i][0]);
+      if (!raw) continue;
+      
+      var parts = raw.split('|');
+      // id|materialType|purchaseDate|purchaseOrder|supplierCode|supplierName|materialName|orderCustomer|gsm|rollWidth|length|width|quantity|unit|expectedArrivalDate|packetType|paperType|manufacturer|importer|updatedAt
+      
+      if (parts.length < 1) continue;
+
+      var item = {
+        id: parts[0] || "",
+        materialType: parts[1] || "",
+        purchaseDate: parts[2] || "",
+        purchaseOrder: parts[3] || "",
+        supplierCode: parts[4] || "",
+        supplierName: parts[5] || "",
+        materialName: parts[6] || "",
+        orderCustomer: parts[7] || "",
+        gsm: Number(parts[8]) || 0,
+        rollWidth: Number(parts[9]) || 0,
+        length: Number(parts[10]) || 0,
+        width: Number(parts[11]) || 0,
+        quantity: Number(parts[12]) || 0,
+        unit: parts[13] || "",
+        expectedArrivalDate: parts[14] || "",
+        packetType: parts[15] || "",
+        paperType: parts[16] || "",
+        manufacturer: parts[17] || "",
+        importer: parts[18] || "",
+        updatedAt: parts[19] || ""
+      };
+      scheduleItems.push(item);
+    }
+
+    return responseJSON({ success: true, data: scheduleItems });
+  } catch (e) {
+    return responseJSON({ success: false, message: e.message });
+  }
+}
+
+function responseJSON(data) {
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}

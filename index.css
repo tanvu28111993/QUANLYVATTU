@@ -1,0 +1,68 @@
+
+/* Custom Scrollbar Styles - PC Optimized */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f0f0f; 
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a2a2a; 
+  border-radius: 5px;
+  border: 2px solid #0f0f0f;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #DA291C; 
+}
+
+/* Animations */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out forwards;
+}
+
+@keyframes progress-loading {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-progress-loading {
+  animation: progress-loading 1.2s infinite ease-in-out;
+}
+
+/* Table Specific Fixes */
+.custom-scrollbar {
+  scrollbar-gutter: stable;
+}
+
+table {
+  border-spacing: 0;
+  border-collapse: separate;
+}
+
+/* Zero-copy rendering hint */
+tr {
+  contain: content;
+}
+
+/* PWA Splash prevention */
+html, body {
+  height: 100%;
+  margin: 0;
+  background-color: #0f0f0f;
+  color: #fff;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
