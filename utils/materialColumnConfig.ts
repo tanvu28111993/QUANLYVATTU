@@ -1,12 +1,6 @@
 
 import { InventoryItem, ColumnConfig } from '../types';
-
-const numberFormatter = new Intl.NumberFormat('vi-VN');
-
-const formatNumber = (val: any) => {
-    const num = Number(val);
-    return !isNaN(num) ? numberFormatter.format(num) : val;
-};
+import { formatNumber } from './formatting';
 
 // Cấu hình cột cho bảng Tồn Kho Vật Tư
 export const MATERIAL_COLUMNS: ColumnConfig<InventoryItem>[] = [

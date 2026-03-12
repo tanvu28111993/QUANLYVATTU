@@ -1,22 +1,6 @@
 import { ScheduleItem } from '../types';
 import { ColumnConfig } from '../types/ui';
-
-const numberFormatter = new Intl.NumberFormat('vi-VN');
-const formatNumber = (val: any) => {
-    const num = Number(val);
-    return !isNaN(num) ? numberFormatter.format(num) : val;
-};
-
-const formatDate = (val: any) => {
-    if (!val) return '';
-    try {
-        const date = new Date(val);
-        if (isNaN(date.getTime())) return val;
-        return new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
-    } catch (e) {
-        return val;
-    }
-};
+import { formatNumber, formatDate, formatDateTime } from './formatting';
 
 const getScheduleStatus = (dateStr: string) => {
     if (!dateStr) return { label: '', color: '' };
@@ -75,14 +59,7 @@ export const SCHEDULE_COLUMNS: ColumnConfig<ScheduleItem>[] = [
         header: 'CẬP NHẬT', 
         accessor: 'updatedAt', 
         width: 150, 
-        format: (val) => {
-            if (!val) return '';
-            try {
-                return new Date(val).toLocaleString('vi-VN');
-            } catch {
-                return val;
-            }
-        }
+        format: formatDateTime
     },
     { 
         header: 'TRẠNG THÁI', 

@@ -1,14 +1,5 @@
 import { InventoryItem, ColumnConfig } from '../types';
-
-// MICRO-OPTIMIZATION: Cache Intl.NumberFormat instance
-// Tránh khởi tạo lại formatter cho hàng nghìn cell dữ liệu
-const numberFormatter = new Intl.NumberFormat('vi-VN');
-
-// Hàm helper để định dạng số
-const formatNumber = (val: any) => {
-    const num = Number(val);
-    return !isNaN(num) ? numberFormatter.format(num) : val;
-};
+import { formatNumber, formatDateTime } from './formatting';
 
 // Hàm helper lấy màu sắc dựa trên loại giao dịch (Ưu tiên cao nhất)
 export const getTransactionStyle = (item: InventoryItem) => {

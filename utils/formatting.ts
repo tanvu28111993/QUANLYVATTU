@@ -1,14 +1,45 @@
 
 
 // Helper: Định dạng ngày giờ chuẩn hệ thống (dd/MM/yyyy HH:mm:ss)
-export const formatDateTime = (date: Date): string => {
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  const h = String(date.getHours()).padStart(2, '0');
-  const m = String(date.getMinutes()).padStart(2, '0');
-  const s = String(date.getSeconds()).padStart(2, '0');
-  return `${day}/${month}/${year} ${h}:${m}:${s}`;
+export const formatDateTime = (date: Date | string | number): string => {
+  if (!date) return '';
+  try {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return String(date);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    const s = String(d.getSeconds()).padStart(2, '0');
+    return `${day}/${month}/${year} ${h}:${m}:${s}`;
+  } catch (e) {
+    return String(date);
+  }
+};
+
+export const formatDate = (date: Date | string | number): string => {
+  if (!date) return '';
+  try {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return String(date);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch (e) {
+    return String(date);
+  }
+};
+
+const numberFormatter = new Intl.NumberFormat('vi-VN', {
+  maximumFractionDigits: 2,
+});
+
+export const formatNumber = (val: any): string | any => {
+    if (val === null || val === undefined || val === '') return val;
+    const num = Number(val);
+    return !isNaN(num) ? numberFormatter.format(num) : val;
 };
 
 // Helper: Parse chuỗi ngày giờ VN (dd/MM/yyyy HH:mm:ss) sang Timestamp
