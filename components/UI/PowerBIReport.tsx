@@ -13,7 +13,7 @@ export const PowerBIReport: React.FC<PowerBIReportProps> = ({ embedUrl, title, m
   const [isLoading, setIsLoading] = useState(true);
 
   return (
-    <div className="w-full h-full flex flex-col relative bg-slate-900/50">
+    <div className="w-full h-full flex flex-col relative !p-0">
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center z-10 bg-slate-900/50 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-3">
@@ -58,7 +58,7 @@ export const PowerBIReport: React.FC<PowerBIReportProps> = ({ embedUrl, title, m
             }]
           ])
         }
-        cssClassName="w-full h-full"
+        cssClassName="!w-full !h-full !p-0"
         getEmbeddedComponent={(embeddedReport) => {
           // Store reference if needed
         }}

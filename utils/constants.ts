@@ -30,7 +30,8 @@ export const FULL_WIDTH_MENUS = [
 
 export const NO_PADDING_MENUS = [
     'OVERVIEW',
-    'EXPECTED_SCHEDULE'
+    'EXPECTED_SCHEDULE',
+    'PAPER_LOCATION'
 ];
 
 export const KEEP_ALIVE_MENUS = [
