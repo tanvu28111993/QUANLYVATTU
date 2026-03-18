@@ -1,24 +1,23 @@
 export interface ScheduleItem {
   id: string;
-  materialType: string;      // 0. Loại vật tư
-  purchaseDate: string;      // 1. Ngày mua
-  purchaseOrder: string;     // 2. Đơn hàng mua
-  supplierCode: string;      // 3. Mã nhà cung cấp
-  supplierName: string;      // 4. Tên nhà cung cấp
-  materialName: string;      // 5. Tên vật tư
-  orderCustomer: string;     // 6. Đơn hàng / Khách hàng
-  gsm: number;               // 6.5 Định lượng
-  rollWidth: number;         // 7. Khổ lô
-  length: number;            // 8. Dài
-  width: number;             // 9. Rộng
-  quantity: number;          // 10. Số lượng
-  unit: string;              // 11. Đơn vị
-  expectedArrivalDate: string; // 12. Ngày dự kiến về
-  
-  // New fields
-  packetType?: string;       // Loại Kiện
-  paperType?: string;        // Loại Giấy
-  manufacturer?: string;     // Nhà sản xuất
-  importer?: string;         // Người nhập
-  updatedAt?: string;        // Cập nhật
+  purchaseOrder: string;     // 1. Đơn hàng
+  materialType: string;      // 2. Loại vật tư
+  supplierCode: string;      // 3. Mã NCC
+  supplierName: string;      // 4. Tên NCC
+  materialCode: string;      // 5. Mã vật tư
+  materialName: string;      // 6. Tên vật tư
+  orderCustomer: string;     // 7. Khách hàng
+  packetType: string;        // 8. Loại kiện
+  paperType: string;         // 9. Loại giấy
+  manufacturer: string;      // 10. Nhà sản xuất
+  purchaseDate: string;      // 11. Ngày mua
+  gsm: number;               // 12. Định lượng
+  rollWidth: number;         // 13. Khổ
+  length: number;            // 14. Dài
+  width: number;             // 15. Rộng
+  quantity: number;          // 16. Số lượng
+  unit: string;              // 17. Đơn vị
+  expectedArrivalDate: string; // 18. Ngày về dự kiến
+  importer: string;          // 19. Người nhập
+  updatedAt: string;         // 20. Ngày cập nhật
 }

@@ -425,25 +425,26 @@ function handleGetSchedule() {
 
       var item = {
         id: parts[0] || "",
-        materialType: parts[1] || "",
-        purchaseDate: parts[2] || "",
-        purchaseOrder: parts[3] || "",
-        supplierCode: parts[4] || "",
-        supplierName: parts[5] || "",
+        purchaseOrder: parts[1] || "",
+        materialType: parts[2] || "",
+        supplierCode: parts[3] || "",
+        supplierName: parts[4] || "",
+        materialCode: parts[5] || "",
         materialName: parts[6] || "",
         orderCustomer: parts[7] || "",
-        gsm: Number(parts[8]) || 0,
-        rollWidth: Number(parts[9]) || 0,
-        length: Number(parts[10]) || 0,
-        width: Number(parts[11]) || 0,
-        quantity: Number(parts[12]) || 0,
-        unit: parts[13] || "",
-        expectedArrivalDate: parts[14] || "",
-        packetType: parts[15] || "",
-        paperType: parts[16] || "",
-        manufacturer: parts[17] || "",
-        importer: parts[18] || "",
-        updatedAt: parts[19] || ""
+        packetType: parts[8] || "",
+        paperType: parts[9] || "",
+        manufacturer: parts[10] || "",
+        purchaseDate: parts[11] || "",
+        gsm: Number(parts[12]) || 0,
+        rollWidth: Number(parts[13]) || 0,
+        length: Number(parts[14]) || 0,
+        width: Number(parts[15]) || 0,
+        quantity: Number(parts[16]) || 0,
+        unit: parts[17] || "",
+        expectedArrivalDate: parts[18] || "",
+        importer: parts[19] || "",
+        updatedAt: parts[20] || ""
       };
       scheduleItems.push(item);
     }

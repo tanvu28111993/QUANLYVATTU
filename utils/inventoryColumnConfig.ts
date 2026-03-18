@@ -4,7 +4,7 @@ import { formatNumber, formatDateTime } from './formatting';
 // Hàm helper lấy màu sắc dựa trên loại giao dịch (Ưu tiên cao nhất)
 export const getTransactionStyle = (item: InventoryItem) => {
      if (item.transactionType === 'EXPORT') return 'text-orange-500 font-bold';
-     if (item.transactionType === 'IMPORT') return 'text-green-500 font-bold';
+     if (item.transactionType === 'IMPORT') return 'text-brand-purple font-bold';
      return '';
 };
 
@@ -16,7 +16,7 @@ export const INVENTORY_COLUMNS: ColumnConfig<InventoryItem>[] = [
              const transStyle = getTransactionStyle(item);
              if (transStyle) return transStyle;
              
-             if (isPending) return 'text-green-500 font-bold';
+             if (isPending) return 'text-brand-purple font-bold';
              if (isOdd) return 'text-orange-500 font-bold';
              return 'text-blue-400 font-bold group-hover:text-blue-300';
         }
@@ -50,7 +50,7 @@ export const INVENTORY_COLUMNS: ColumnConfig<InventoryItem>[] = [
              const transStyle = getTransactionStyle(item);
              if (transStyle) return transStyle;
              
-             if (isPending) return 'text-green-500 font-bold';
+             if (isPending) return 'text-brand-purple font-bold';
              if (isOdd) return 'text-orange-500 font-bold';
              return 'text-white font-bold';
         }
@@ -63,7 +63,7 @@ export const INVENTORY_COLUMNS: ColumnConfig<InventoryItem>[] = [
              const transStyle = getTransactionStyle(item);
              if (transStyle) return transStyle;
 
-             if (isPending) return 'text-green-500 font-bold';
+             if (isPending) return 'text-brand-purple font-bold';
              if (isOdd) return 'text-orange-500 font-bold';
              return 'text-brand-red font-bold group-hover:text-red-400';
         }
@@ -76,7 +76,7 @@ export const INVENTORY_COLUMNS: ColumnConfig<InventoryItem>[] = [
 // Hàm lấy style mặc định nếu cột không định nghĩa style riêng
 export const getDefaultCellStyle = (isOddLot: boolean, isPendingOut: boolean) => {
     // Logic mặc định cho Tồn Kho
-    if (isPendingOut) return 'text-green-500 font-bold';
+    if (isPendingOut) return 'text-brand-purple font-bold';
     if (isOddLot) return 'text-orange-500 font-bold';
     return 'text-gray-300 font-bold';
 };

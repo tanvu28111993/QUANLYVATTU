@@ -54,10 +54,10 @@ export const InventoryRow = React.memo(({
             className={`
             transition-all duration-75 group border-l-4 cursor-pointer
             ${isActive 
-                ? 'bg-blue-600/30 border-l-blue-400 ring-1 ring-inset ring-blue-500/50 z-10 relative' 
+                ? 'bg-brand-purple/30 border-l-brand-purple ring-1 ring-inset ring-brand-purple/50 z-10 relative' 
                 : isSelected
                     ? 'bg-brand-purple/30 border-l-brand-purple' // Highlight selected row
-                    : `border-transparent hover:bg-blue-600/20 hover:border-l-blue-500 ${index % 2 === 0 ? '' : 'bg-slate-800/30'}`
+                    : `border-transparent hover:bg-brand-purple/20 hover:border-l-brand-purple ${index % 2 === 0 ? '' : 'bg-slate-800/30'}`
             }
             `}
         >

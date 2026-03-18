@@ -76,7 +76,7 @@ export const InventoryTableHeader: React.FC<InventoryTableHeaderProps> = React.m
 
               {!col.isFixed && (
                 <div
-                  className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-500/50 z-30"
+                  className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-brand-purple/50 z-30"
                   onMouseDown={(e) => onResizeMouseDown(e, accessor)}
                 />
               )}

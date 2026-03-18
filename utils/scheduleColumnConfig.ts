@@ -37,26 +37,27 @@ export const getScheduleRowStyle = (item: ScheduleItem) => {
 };
 
 export const SCHEDULE_COLUMNS: ColumnConfig<ScheduleItem>[] = [
-    { header: 'ĐƠN HÀNG MUA', accessor: 'purchaseOrder', width: 180 },
+    { header: 'ĐƠN HÀNG', accessor: 'purchaseOrder', width: 180 },
     { header: 'LOẠI VẬT TƯ', accessor: 'materialType', width: 170 },
     { header: 'MÃ NCC', accessor: 'supplierCode', width: 150 },
-    { header: 'TÊN NHÀ CUNG CẤP', accessor: 'supplierName', width: 300 },
+    { header: 'TÊN NCC', accessor: 'supplierName', width: 300 },
+    { header: 'MÃ VẬT TƯ', accessor: 'materialCode', width: 150 },
     { header: 'TÊN VẬT TƯ', accessor: 'materialName', width: 500 },
-    { header: 'ĐƠN HÀNG/ KHÁCH HÀNG', accessor: 'orderCustomer', width: 200 },
+    { header: 'KHÁCH HÀNG', accessor: 'orderCustomer', width: 200 },
     { header: 'LOẠI KIỆN', accessor: 'packetType', width: 150 },
     { header: 'LOẠI GIẤY', accessor: 'paperType', width: 150 },
     { header: 'NHÀ SẢN XUẤT', accessor: 'manufacturer', width: 200 },
     { header: 'NGÀY MUA', accessor: 'purchaseDate', width: 150, format: formatDate },
     { header: 'ĐỊNH LƯỢNG', accessor: 'gsm', width: 120, isNumeric: true, format: formatNumber },
-    { header: 'KHỔ LÔ', accessor: 'rollWidth', width: 120, isNumeric: true, format: formatNumber },
+    { header: 'KHỔ', accessor: 'rollWidth', width: 120, isNumeric: true, format: formatNumber },
     { header: 'DÀI', accessor: 'length', width: 120, isNumeric: true, format: formatNumber },
     { header: 'RỘNG', accessor: 'width', width: 120, isNumeric: true, format: formatNumber },
     { header: 'SỐ LƯỢNG', accessor: 'quantity', width: 120, isNumeric: true, format: formatNumber },
     { header: 'ĐƠN VỊ', accessor: 'unit', width: 100 },
-    { header: 'NGÀY DỰ KIẾN VỀ', accessor: 'expectedArrivalDate', width: 150, format: formatDate },
+    { header: 'NGÀY VỀ DỰ KIẾN', accessor: 'expectedArrivalDate', width: 150, format: formatDate },
     { header: 'NGƯỜI NHẬP', accessor: 'importer', width: 120 },
     { 
-        header: 'CẬP NHẬT', 
+        header: 'NGÀY CẬP NHẬT', 
         accessor: 'updatedAt', 
         width: 150, 
         format: formatDateTime

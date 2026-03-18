@@ -92,7 +92,7 @@ export const InventoryToolbar: React.FC<InventoryToolbarProps> = ({
               
               <button 
                 onClick={() => onUpdateFilter('showPendingOut', !filterState.showPendingOut)} 
-                className={`h-10 px-3 flex items-center gap-2 rounded-lg border transition-all text-sm font-medium whitespace-nowrap ${filterState.showPendingOut ? 'bg-green-500/10 border-green-500 text-green-500' : 'bg-slate-800 border-slate-600 text-gray-400 hover:text-white hover:border-gray-500'}`}
+                className={`h-10 px-3 flex items-center gap-2 rounded-lg border transition-all text-sm font-medium whitespace-nowrap ${filterState.showPendingOut ? 'bg-brand-purple/10 border-brand-purple text-brand-purple' : 'bg-slate-800 border-slate-600 text-gray-400 hover:text-white hover:border-gray-500'}`}
               >
                   <Hourglass className="w-4 h-4" /><span className="hidden md:inline">Chờ Xuất</span>
               </button>

@@ -130,7 +130,7 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
 
   return (
     <div 
-        className={`flex-1 w-full flex flex-col relative focus:outline-none focus:ring-2 focus:ring-blue-500/50 ${containerClasses}`}
+        className={`flex-1 w-full flex flex-col relative focus:outline-none focus:ring-2 focus:ring-brand-purple/50 ${containerClasses}`}
         tabIndex={0}
         onKeyDown={handleKeyDown}
         role="grid"
@@ -138,8 +138,8 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
         aria-busy={isLoading || isSyncing}
     >
       {showBackgroundUpdate && (
-          <div className="absolute top-0 left-0 w-full h-1 bg-blue-900/30 z-50">
-              <div className="h-full bg-blue-500 animate-progress-indeterminate shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+          <div className="absolute top-0 left-0 w-full h-1 bg-brand-purple/30 z-50">
+              <div className="h-full bg-brand-purple animate-progress-indeterminate shadow-[0_0_10px_rgba(191,0,255,0.5)]"></div>
           </div>
       )}
 

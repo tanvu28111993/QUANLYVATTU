@@ -49,7 +49,7 @@ export const ContentRouter: React.FC<ContentRouterProps> = React.memo(({ current
   return (
     <>
       {Array.from(visitedMenus).map(menuId => {
-        const Component = ROUTE_COMPONENTS[menuId];
+        const Component = ROUTE_COMPONENTS[menuId as string];
         if (!Component) return null;
 
         // Determine visibility

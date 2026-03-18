@@ -48,6 +48,10 @@ table {
   border-collapse: separate;
 }
 
+table th, table td {
+  font-weight: 900 !important;
+}
+
 /* Zero-copy rendering hint */
 tr {
   contain: content;
