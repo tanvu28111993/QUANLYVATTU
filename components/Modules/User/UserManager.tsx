@@ -60,20 +60,11 @@ export const UserManager: React.FC = () => {
       UserService.updateUser(user, operation),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      setIsAdding(false);
-      setNewUser({
-        username: '',
-        password: '',
-        tongKhoVatTu: false,
-        nghiepVuWeb: false,
-        nghiepVuMobile: false,
-        kiemKeMobile: false,
-        kiemKeWeb: false,
-        quanLyVatTu: false,
-      });
     },
     onError: (err) => {
-      alert(`Lỗi: ${err instanceof Error ? err.message : 'Không thể thực hiện thao tác'}`);
+      addToast(`Lỗi: ${err instanceof Error ? err.message : 'Không thể thực hiện thao tác'}`, 'error');
+      // Invalidate to sync back with server state if optimistic update failed
+      queryClient.invalidateQueries({ queryKey: ['users'] });
     }
   });
 
@@ -131,19 +122,18 @@ export const UserManager: React.FC = () => {
   const handleSaveEdit = () => {
     if (!editingUser) return;
     
+    // Close modal immediately for better UX
+    setIsEditing(false);
+    setEditingUser(null);
+    setSelectedUsernames(new Set());
+
     // Optimistic update
     queryClient.setQueryData(['users'], (old: User[] | undefined) => {
       if (!old) return old;
       return old.map(u => u.username === editingUser.username ? editingUser : u);
     });
 
-    updateMutation.mutate({ user: editingUser, operation: 'edit' }, {
-      onSuccess: () => {
-        setIsEditing(false);
-        setEditingUser(null);
-        setSelectedUsernames(new Set());
-      }
-    });
+    updateMutation.mutate({ user: editingUser, operation: 'edit' });
   };
 
   const handleAdd = () => {
@@ -152,7 +142,36 @@ export const UserManager: React.FC = () => {
       return;
     }
     
-    updateMutation.mutate({ user: newUser, operation: 'add' });
+    // Check if user already exists in local state to prevent duplicate keys
+    const exists = users.some(u => u.username.toLowerCase() === newUser.username.toLowerCase());
+    if (exists) {
+      addToast('Tài khoản đã tồn tại trong danh sách', 'error');
+      return;
+    }
+
+    // Close modal immediately
+    setIsAdding(false);
+    const userToAdd = { ...newUser };
+    
+    // Reset form
+    setNewUser({
+      username: '',
+      password: '',
+      tongKhoVatTu: false,
+      nghiepVuWeb: false,
+      nghiepVuMobile: false,
+      kiemKeMobile: false,
+      kiemKeWeb: false,
+      quanLyVatTu: false,
+    });
+
+    // Optimistic update
+    queryClient.setQueryData(['users'], (old: User[] | undefined) => {
+      const list = old ? [...old] : [];
+      return [...list, userToAdd];
+    });
+
+    updateMutation.mutate({ user: userToAdd, operation: 'add' });
   };
 
   // filteredUsers moved up
