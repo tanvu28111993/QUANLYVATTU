@@ -6,9 +6,7 @@ import { KEEP_ALIVE_MENUS } from '../../utils';
 
 // --- Code Splitting (Lazy Loading) ---
 const Overview = lazy(() => import('../Dashboard/Overview').then(m => ({ default: m.Overview })));
-const PaperLocation = lazy(() => import('../Dashboard/PaperLocation').then(m => ({ default: m.PaperLocation })));
-
-// Updated paths to standardized folder structure
+const UserManager = lazy(() => import('../Modules/User/UserManager').then(m => ({ default: m.UserManager })));
 const InventoryManager = lazy(() => import('../Modules/Inventory/InventoryManager').then(m => ({ default: m.InventoryManager })));
 const MaterialManager = lazy(() => import('../Modules/Material/MaterialManager').then(m => ({ default: m.MaterialManager })));
 const ReferenceManager = lazy(() => import('../Modules/Reference/ReferenceManager').then(m => ({ default: m.ReferenceManager })));
@@ -18,7 +16,7 @@ const ExpectedSchedule = lazy(() => import('../Modules/Schedule/ExpectedSchedule
 // This prevents object recreation on every render and keeps the component pure
 const ROUTE_COMPONENTS: Partial<Record<MenuId, React.LazyExoticComponent<React.FC>>> = {
   OVERVIEW: Overview,
-  PAPER_LOCATION: PaperLocation,
+  USER_MANAGEMENT: UserManager,
   INVENTORY: InventoryManager,
   REFERENCE: ReferenceManager,
   EXPECTED_SCHEDULE: ExpectedSchedule,

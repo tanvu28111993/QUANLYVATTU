@@ -1,6 +1,6 @@
 
 // --- CẤU HÌNH ---
-var ID_SHEET_DANG_NHAP = "14FafF1F1BHh87-KLs4mIyfzmJnvyVxNchi358t-6DVc"; 
+var ID_SHEET_DANG_NHAP = "1ma7ZRlSGmdh4BtPc6Y3blDABpxkqzrDcOhywquliBYw"; 
 var ID_SHEET_KHO = "1DSg_2nJoPkAfudCy4QnHBEbvKhwHm-j6Cd9CK_cwfkg";
 var ID_SHEET_DANHMUC = "1mn8QLCcgmCUKKckGXIyRcghDnPPtBAgjuGsVLJaDTF4"; 
 var ID_SHEET_LICH = "11FIvb9hXe98TYOg6X4REjQyrgzdLOBfXOCM-gLIUVdA";
@@ -55,6 +55,8 @@ function routeRequest(params) {
   var action = params.action ? String(params.action).trim() : "";
   
   if (action == 'login') return handleLogin(params);
+  if (action == 'getUsers') return handleGetUsers();
+  if (action == 'updateUser') return handleUpdateUser(params);
   if (action == 'getInventory') return handleGetInventory(params);
   if (action == 'getHistory') return handleGetHistory(params); 
   if (action == 'getMetaData') return handleGetMetaData(); 
@@ -174,14 +176,119 @@ function handleLogin(params) {
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return responseJSON({ success: false, message: "Lỗi hệ thống hoặc chưa có dữ liệu user" });
   
-  var data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+  var data = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
   for (var i = 0; i < data.length; i++) {
     // Basic auth check
     if (String(data[i][0]) == username && String(data[i][1]) == password) {
-      return responseJSON({ success: true, user: { username: username } });
+      return responseJSON({ 
+        success: true, 
+        user: { 
+          username: username,
+          tongKhoVatTu: data[i][2] === true || String(data[i][2]).toUpperCase() === 'TRUE',
+          nghiepVuWeb: data[i][3] === true || String(data[i][3]).toUpperCase() === 'TRUE',
+          nghiepVuMobile: data[i][4] === true || String(data[i][4]).toUpperCase() === 'TRUE',
+          kiemKeMobile: data[i][5] === true || String(data[i][5]).toUpperCase() === 'TRUE',
+          kiemKeWeb: data[i][6] === true || String(data[i][6]).toUpperCase() === 'TRUE',
+          quanLyVatTu: data[i][7] === true || String(data[i][7]).toUpperCase() === 'TRUE'
+        } 
+      });
     }
   }
   return responseJSON({ success: false, message: "Sai tài khoản/mật khẩu" });
+}
+
+function handleGetUsers() {
+  try {
+    var ss = SpreadsheetApp.openById(ID_SHEET_DANG_NHAP);
+    var sheet = ss.getSheetByName("DN");
+    if (!sheet) return responseJSON({ success: false, message: "Không tìm thấy sheet DN" });
+
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return responseJSON({ success: true, data: [] });
+
+    var data = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
+    var users = [];
+    for (var i = 0; i < data.length; i++) {
+      var row = data[i];
+      if (!row[0]) continue; // Skip empty usernames
+      users.push({
+        username: String(row[0]),
+        password: String(row[1]),
+        tongKhoVatTu: row[2] === true || String(row[2]).toUpperCase() === 'TRUE',
+        nghiepVuWeb: row[3] === true || String(row[3]).toUpperCase() === 'TRUE',
+        nghiepVuMobile: row[4] === true || String(row[4]).toUpperCase() === 'TRUE',
+        kiemKeMobile: row[5] === true || String(row[5]).toUpperCase() === 'TRUE',
+        kiemKeWeb: row[6] === true || String(row[6]).toUpperCase() === 'TRUE',
+        quanLyVatTu: row[7] === true || String(row[7]).toUpperCase() === 'TRUE'
+      });
+    }
+    return responseJSON({ success: true, data: users });
+  } catch (err) {
+    return responseJSON({ success: false, message: err.message });
+  }
+}
+
+function handleUpdateUser(params) {
+  try {
+    var operation = params.operation; // 'add', 'edit', 'delete'
+    var userData = params.data; // JSON string or object
+    if (typeof userData === 'string') {
+      userData = JSON.parse(userData);
+    }
+
+    var ss = SpreadsheetApp.openById(ID_SHEET_DANG_NHAP);
+    var sheet = ss.getSheetByName("DN");
+    if (!sheet) return responseJSON({ success: false, message: "Không tìm thấy sheet DN" });
+
+    var username = userData.username;
+    if (!username) return responseJSON({ success: false, message: "Thiếu tên đăng nhập" });
+
+    var lastRow = sheet.getLastRow();
+    var data = lastRow > 1 ? sheet.getRange(2, 1, lastRow - 1, 1).getValues() : [];
+    
+    var rowIndex = -1;
+    for (var i = 0; i < data.length; i++) {
+      if (String(data[i][0]) === username) {
+        rowIndex = i + 2;
+        break;
+      }
+    }
+
+    if (operation === 'add') {
+      if (rowIndex !== -1) return responseJSON({ success: false, message: "Tài khoản đã tồn tại" });
+      sheet.appendRow([
+        username,
+        userData.password || "",
+        userData.tongKhoVatTu ? true : false,
+        userData.nghiepVuWeb ? true : false,
+        userData.nghiepVuMobile ? true : false,
+        userData.kiemKeMobile ? true : false,
+        userData.kiemKeWeb ? true : false,
+        userData.quanLyVatTu ? true : false
+      ]);
+    } else if (operation === 'edit') {
+      if (rowIndex === -1) return responseJSON({ success: false, message: "Tài khoản không tồn tại" });
+      sheet.getRange(rowIndex, 1, 1, 8).setValues([[
+        username,
+        userData.password || "",
+        userData.tongKhoVatTu ? true : false,
+        userData.nghiepVuWeb ? true : false,
+        userData.nghiepVuMobile ? true : false,
+        userData.kiemKeMobile ? true : false,
+        userData.kiemKeWeb ? true : false,
+        userData.quanLyVatTu ? true : false
+      ]]);
+    } else if (operation === 'delete') {
+      if (rowIndex === -1) return responseJSON({ success: false, message: "Tài khoản không tồn tại" });
+      sheet.deleteRow(rowIndex);
+    } else {
+      return responseJSON({ success: false, message: "Operation không hợp lệ" });
+    }
+
+    return responseJSON({ success: true, message: "Cập nhật thành công" });
+  } catch (err) {
+    return responseJSON({ success: false, message: err.message });
+  }
 }
 
 function handleCheckVersion() {

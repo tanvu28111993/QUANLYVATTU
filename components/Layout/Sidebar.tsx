@@ -4,14 +4,13 @@ import { useAuth } from '../../contexts/AuthContext';
 import { MenuId, MenuItem } from '../../types';
 import { 
   LayoutDashboard, 
-  MapPin, 
+  Users, 
   Package, 
   LogOut,
   Loader2,
   BookOpen,
-  Container,  // New Icon
-  Map,        // New Icon
-  Calendar    // New Icon
+  Container,
+  Calendar
 } from 'lucide-react';
 import { FULL_WIDTH_MENUS } from '../../utils';
 
@@ -26,8 +25,8 @@ interface SidebarProps {
 const MENU_ITEMS: MenuItem[] = [
   { id: 'OVERVIEW', label: 'TỔNG QUAN', icon: LayoutDashboard },
   
-  // Group: Locations (Vị trí)
-  { id: 'PAPER_LOCATION', label: 'VỊ TRÍ KHO GIẤY', icon: MapPin },
+  // Group: Management
+  { id: 'USER_MANAGEMENT', label: 'QUẢN LÝ NGƯỜI DÙNG', icon: Users },
   { id: 'EXPECTED_SCHEDULE', label: 'LỊCH DỰ KIẾN', icon: Calendar },
   
   // Group: Inventory (Tồn kho)

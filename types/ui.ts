@@ -6,7 +6,7 @@ export type MenuId =
   | 'MATERIAL_INVENTORY' 
   | 'PAPER_CALCULATION'
   | 'EXPECTED_SCHEDULE'
-  | 'PAPER_LOCATION';
+  | 'USER_MANAGEMENT';
 
 export interface MenuItem {
   id: MenuId;
