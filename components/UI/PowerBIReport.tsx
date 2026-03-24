@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { PowerBIEmbed } from 'powerbi-client-react';
 import { models } from 'powerbi-client';
-import { Loader2 } from 'lucide-react';
 
 interface PowerBIReportProps {
   embedUrl: string;
@@ -10,19 +9,8 @@ interface PowerBIReportProps {
 }
 
 export const PowerBIReport: React.FC<PowerBIReportProps> = ({ embedUrl, title, mobileLayout = false }) => {
-  const [isLoading, setIsLoading] = useState(true);
-
   return (
     <div className="w-full h-full flex flex-col relative !p-0">
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center z-10 bg-slate-900/50 backdrop-blur-sm">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-brand-primary" />
-            <span className="text-sm text-gray-400">Đang tải báo cáo...</span>
-          </div>
-        </div>
-      )}
-      
       <PowerBIEmbed
         embedConfig={{
           type: 'report',
@@ -45,16 +33,13 @@ export const PowerBIReport: React.FC<PowerBIReportProps> = ({ embedUrl, title, m
         eventHandlers={
           new Map([
             ['loaded', function () {
-              setIsLoading(false);
               console.log('Report loaded');
             }],
             ['rendered', function () {
-              setIsLoading(false);
               console.log('Report rendered');
             }],
             ['error', function (event) {
               console.error('PowerBI Error:', event?.detail);
-              setIsLoading(false);
             }]
           ])
         }

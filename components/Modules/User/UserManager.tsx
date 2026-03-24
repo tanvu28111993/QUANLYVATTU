@@ -32,7 +32,7 @@ export const UserManager: React.FC = () => {
   const { colWidths, handleMouseDown } = useColumnResize(initialWidths);
 
   const totalTableWidth = useMemo(() => {
-    return Object.values(colWidths).reduce((acc, w) => acc + w, 0) + 50;
+    return (Object.values(colWidths) as number[]).reduce((acc, w) => acc + w, 0) + 50;
   }, [colWidths]);
 
   const [isAdding, setIsAdding] = useState(false);
