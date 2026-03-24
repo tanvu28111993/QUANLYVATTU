@@ -66,14 +66,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 title={isCollapsed ? item.label : ''}
                 className={`
                   w-full flex items-center rounded-lg text-sm font-medium transition-all duration-200 group relative overflow-hidden
-                  ${isCollapsed ? 'justify-center py-3 px-0' : 'gap-3 px-4 py-3'}
+                  ${isCollapsed ? 'justify-center h-12' : 'gap-3 px-4 py-3'}
                   ${isActive 
                     ? 'bg-brand-red text-white shadow-lg shadow-red-900/30' 
                     : 'text-gray-400 hover:bg-white/10 hover:text-white'}
                 `}
               >
-                {/* Updated Icon: Size changed to w-6 h-6 */}
-                <Icon className={`w-6 h-6 relative z-10 transition-colors duration-200 text-white`} />
+                {/* Fixed Icon: Ensured consistent sizing and centering */}
+                <div className={`flex-shrink-0 flex items-center justify-center ${isCollapsed ? 'w-full h-full' : 'w-6 h-6'}`}>
+                  <Icon className="w-6 h-6 relative z-10 transition-colors duration-200" />
+                </div>
                 
                 {!isCollapsed && (
                   <span className="whitespace-nowrap animate-fade-in relative z-10 text-left">{item.label}</span>
@@ -104,12 +106,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className={`
             w-full flex items-center rounded-lg text-sm font-medium transition-all duration-200 group relative overflow-hidden
             bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white hover:border-red-500 shadow-lg shadow-red-900/10
-            ${isCollapsed ? 'justify-center py-3 px-0' : 'gap-3 px-4 py-3'}
+            ${isCollapsed ? 'justify-center h-12' : 'gap-3 px-4 py-3'}
           `}
           title="Đăng xuất"
         >
-          {/* Updated Logout Icon: Size changed to w-6 h-6 */}
-          <LogOut className="w-6 h-6 relative z-10 text-red-500 group-hover:text-white transition-colors duration-200" />
+          {/* Updated Logout Icon: Size changed to w-6 h-6 and removed hardcoded color to inherit from button */}
+          <div className={`flex-shrink-0 flex items-center justify-center ${isCollapsed ? 'w-full h-full' : 'w-6 h-6'}`}>
+            <LogOut className="w-6 h-6 relative z-10 transition-colors duration-200" />
+          </div>
           
           {!isCollapsed && (
             <span className="whitespace-nowrap animate-fade-in relative z-10">Đăng xuất</span>
