@@ -1,16 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { ExpectedScheduleTable } from './ExpectedScheduleTable';
-import { ExpectedScheduleToolbar, ScheduleFilterState } from './ExpectedScheduleToolbar';
+import { ExpectedScheduleToolbar } from './ExpectedScheduleToolbar';
 import { SCHEDULE_COLUMNS } from '../../../utils/scheduleColumnConfig';
-import { ScheduleItem } from '../../../types';
-import { ScheduleService } from '../../../services/schedule';
-import { useToast } from '../../../contexts/ToastContext';
 import { useScheduleFilter } from '../../../hooks/useScheduleFilter';
+import { useScheduleQuery } from '../../../hooks/useScheduleQuery';
+import { GLOBAL_EVENTS } from '../../../utils/constants';
+import { useToast } from '../../../contexts/ToastContext';
 
 export const ExpectedSchedule: React.FC = () => {
-  const [data, setData] = useState<ScheduleItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
+  const { schedule, isLoading, isFetching, refresh } = useScheduleQuery();
   const { addToast } = useToast();
 
   // Use the worker-based filter hook
@@ -23,24 +21,21 @@ export const ExpectedSchedule: React.FC = () => {
     updateFilter,
     handleSort,
     exportAndDownloadCSV
-  } = useScheduleFilter(data);
+  } = useScheduleFilter(schedule);
 
-  const fetchData = async () => {
-      try {
-          setLoading(true);
-          const items = await ScheduleService.getSchedule();
-          setData(items);
-      } catch (error) {
-          console.error("Failed to fetch schedule", error);
-          addToast("Lỗi tải dữ liệu lịch dự kiến", "error");
-      } finally {
-          setLoading(false);
-      }
-  };
-
+  // --- LISTEN FOR GLOBAL SHORTCUTS ---
   useEffect(() => {
-      fetchData();
-  }, []);
+    const handleGlobalSync = () => {
+       addToast("Đang đồng bộ dữ liệu lịch...", "info");
+       refresh();
+    };
+
+    window.addEventListener(GLOBAL_EVENTS.TRIGGER_SYNC, handleGlobalSync);
+
+    return () => {
+        window.removeEventListener(GLOBAL_EVENTS.TRIGGER_SYNC, handleGlobalSync);
+    };
+  }, [refresh, addToast]);
 
   const handleExportCSV = () => {
       exportAndDownloadCSV(SCHEDULE_COLUMNS, "Lich_Du_Kien");
@@ -53,10 +48,10 @@ export const ExpectedSchedule: React.FC = () => {
             totalQuantity={totalQuantity}
             totalRows={displayData.length}
             isPending={isFiltering}
-            isSyncing={loading} 
+            isSyncing={isFetching} 
             filterState={filters}
             onUpdateFilter={updateFilter}
-            onRefresh={fetchData}
+            onRefresh={refresh}
             onExportCSV={handleExportCSV}
             columns={SCHEDULE_COLUMNS}
           />
@@ -64,8 +59,8 @@ export const ExpectedSchedule: React.FC = () => {
           <ExpectedScheduleTable 
             data={displayData}
             columns={SCHEDULE_COLUMNS}
-            isLoading={loading}
-            isSyncing={isFiltering}
+            isLoading={isLoading}
+            isSyncing={isFetching || isFiltering}
             sortConfig={sortConfig}
             onSort={handleSort}
             searchColumn={filters.searchColumn !== 'all' ? filters.searchColumn : undefined}
