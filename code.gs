@@ -174,23 +174,34 @@ function handleLogin(params) {
   if (!sheet) sheet = ss.getSheets()[0]; // Fallback to first sheet if DN not found
 
   var lastRow = sheet.getLastRow();
-  if (lastRow < 2) return responseJSON({ success: false, message: "Lỗi hệ thống hoặc chưa có dữ liệu user" });
+  var lastCol = sheet.getLastColumn();
+  if (lastRow < 2 || lastCol < 1) return responseJSON({ success: false, message: "Lỗi hệ thống hoặc chưa có dữ liệu user" });
   
-  var data = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+  var data = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+  
   for (var i = 0; i < data.length; i++) {
-    // Basic auth check
+    // Basic auth check: assume column 0 is username, column 1 is password
     if (String(data[i][0]) == username && String(data[i][1]) == password) {
+      var userObj = {
+        username: username,
+        password: password
+      };
+      for (var j = 2; j < headers.length; j++) {
+        var header = headers[j];
+        if (!header) continue;
+        var val = data[i][j];
+        if (val === true || String(val).toUpperCase() === 'TRUE') {
+          userObj[header] = true;
+        } else if (val === false || String(val).toUpperCase() === 'FALSE') {
+          userObj[header] = false;
+        } else {
+          userObj[header] = String(val);
+        }
+      }
       return responseJSON({ 
         success: true, 
-        user: { 
-          username: username,
-          tongKhoVatTu: data[i][2] === true || String(data[i][2]).toUpperCase() === 'TRUE',
-          nghiepVuWeb: data[i][3] === true || String(data[i][3]).toUpperCase() === 'TRUE',
-          nghiepVuMobile: data[i][4] === true || String(data[i][4]).toUpperCase() === 'TRUE',
-          kiemKeMobile: data[i][5] === true || String(data[i][5]).toUpperCase() === 'TRUE',
-          kiemKeWeb: data[i][6] === true || String(data[i][6]).toUpperCase() === 'TRUE',
-          quanLyVatTu: data[i][7] === true || String(data[i][7]).toUpperCase() === 'TRUE'
-        } 
+        user: userObj
       });
     }
   }
@@ -204,25 +215,45 @@ function handleGetUsers() {
     if (!sheet) return responseJSON({ success: false, message: "Không tìm thấy sheet DN" });
 
     var lastRow = sheet.getLastRow();
-    if (lastRow < 2) return responseJSON({ success: true, data: [] });
+    var lastCol = sheet.getLastColumn();
+    if (lastRow < 1 || lastCol < 1) return responseJSON({ success: true, data: [], headers: [] });
 
-    var data = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
+    var rawHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+    var headers = [];
+    var validColIndices = [];
+    for (var k = 0; k < rawHeaders.length; k++) {
+      if (rawHeaders[k].trim() !== "") {
+        headers.push(rawHeaders[k].trim());
+        validColIndices.push(k);
+      }
+    }
+    
+    if (lastRow < 2) return responseJSON({ success: true, data: [], headers: headers });
+
+    var data = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
     var users = [];
     for (var i = 0; i < data.length; i++) {
       var row = data[i];
       if (!row[0]) continue; // Skip empty usernames
-      users.push({
+      var userObj = {
         username: String(row[0]),
-        password: String(row[1]),
-        tongKhoVatTu: row[2] === true || String(row[2]).toUpperCase() === 'TRUE',
-        nghiepVuWeb: row[3] === true || String(row[3]).toUpperCase() === 'TRUE',
-        nghiepVuMobile: row[4] === true || String(row[4]).toUpperCase() === 'TRUE',
-        kiemKeMobile: row[5] === true || String(row[5]).toUpperCase() === 'TRUE',
-        kiemKeWeb: row[6] === true || String(row[6]).toUpperCase() === 'TRUE',
-        quanLyVatTu: row[7] === true || String(row[7]).toUpperCase() === 'TRUE'
-      });
+        password: String(row[1])
+      };
+      for (var j = 2; j < headers.length; j++) {
+        var header = headers[j];
+        var colIndex = validColIndices[j];
+        var val = row[colIndex];
+        if (val === true || String(val).toUpperCase() === 'TRUE') {
+          userObj[header] = true;
+        } else if (val === false || String(val).toUpperCase() === 'FALSE') {
+          userObj[header] = false;
+        } else {
+          userObj[header] = String(val);
+        }
+      }
+      users.push(userObj);
     }
-    return responseJSON({ success: true, data: users });
+    return responseJSON({ success: true, data: users, headers: headers });
   } catch (err) {
     return responseJSON({ success: false, message: err.message });
   }
@@ -244,6 +275,19 @@ function handleUpdateUser(params) {
     if (!username) return responseJSON({ success: false, message: "Thiếu tên đăng nhập" });
 
     var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
+    if (lastCol < 1) return responseJSON({ success: false, message: "Sheet không có cột nào" });
+    
+    var rawHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+    var headers = [];
+    var validColIndices = [];
+    for (var k = 0; k < rawHeaders.length; k++) {
+      if (rawHeaders[k].trim() !== "") {
+        headers.push(rawHeaders[k].trim());
+        validColIndices.push(k);
+      }
+    }
+    
     var data = lastRow > 1 ? sheet.getRange(2, 1, lastRow - 1, 1).getValues() : [];
     
     var rowIndex = -1;
@@ -256,28 +300,28 @@ function handleUpdateUser(params) {
 
     if (operation === 'add') {
       if (rowIndex !== -1) return responseJSON({ success: false, message: "Tài khoản đã tồn tại" });
-      sheet.appendRow([
-        username,
-        userData.password || "",
-        userData.tongKhoVatTu ? true : false,
-        userData.nghiepVuWeb ? true : false,
-        userData.nghiepVuMobile ? true : false,
-        userData.kiemKeMobile ? true : false,
-        userData.kiemKeWeb ? true : false,
-        userData.quanLyVatTu ? true : false
-      ]);
+      var newRow = new Array(lastCol).fill("");
+      if (validColIndices.length > 0) newRow[validColIndices[0]] = username;
+      if (validColIndices.length > 1) newRow[validColIndices[1]] = userData.password || "";
+      for (var j = 2; j < headers.length; j++) {
+        var header = headers[j];
+        var val = userData[header];
+        if (val === undefined) val = ""; // Default to empty string
+        newRow[validColIndices[j]] = val;
+      }
+      sheet.appendRow(newRow);
     } else if (operation === 'edit') {
       if (rowIndex === -1) return responseJSON({ success: false, message: "Tài khoản không tồn tại" });
-      sheet.getRange(rowIndex, 1, 1, 8).setValues([[
-        username,
-        userData.password || "",
-        userData.tongKhoVatTu ? true : false,
-        userData.nghiepVuWeb ? true : false,
-        userData.nghiepVuMobile ? true : false,
-        userData.kiemKeMobile ? true : false,
-        userData.kiemKeWeb ? true : false,
-        userData.quanLyVatTu ? true : false
-      ]]);
+      var editRow = sheet.getRange(rowIndex, 1, 1, lastCol).getValues()[0];
+      if (validColIndices.length > 0) editRow[validColIndices[0]] = username;
+      if (validColIndices.length > 1) editRow[validColIndices[1]] = userData.password || "";
+      for (var j = 2; j < headers.length; j++) {
+        var header = headers[j];
+        var val = userData[header];
+        if (val === undefined) val = "";
+        editRow[validColIndices[j]] = val;
+      }
+      sheet.getRange(rowIndex, 1, 1, lastCol).setValues([editRow]);
     } else if (operation === 'delete') {
       if (rowIndex === -1) return responseJSON({ success: false, message: "Tài khoản không tồn tại" });
       sheet.deleteRow(rowIndex);

@@ -2,7 +2,7 @@ import { User } from '../types';
 import { HttpService } from './http';
 
 export const UserService = {
-  fetchUsers: async (): Promise<User[]> => {
+  fetchUsers: async (): Promise<{ users: User[], headers: string[] }> => {
     try {
       const params = new URLSearchParams();
       params.append('action', 'getUsers');
@@ -13,9 +13,10 @@ export const UserService = {
 
       if (data.error) throw new Error(data.error);
       
-      // Transform data from sheet columns to User object if needed
-      // Assuming the backend returns objects with keys matching our User interface
-      return data.data || [];
+      return {
+        users: data.data || [],
+        headers: data.headers || []
+      };
     } catch (error) {
       console.error("User Fetch Error:", error);
       throw error;

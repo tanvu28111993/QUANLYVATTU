@@ -4,6 +4,20 @@ export const useColumnResize = (initialWidths: Record<string, number>) => {
   const [colWidths, setColWidths] = useState(initialWidths);
   const resizingRef = useRef<{ accessor: string; startX: number; startWidth: number } | null>(null);
 
+  useEffect(() => {
+    setColWidths(prev => {
+      const newWidths = { ...prev };
+      let changed = false;
+      for (const key in initialWidths) {
+        if (!(key in newWidths)) {
+          newWidths[key] = initialWidths[key];
+          changed = true;
+        }
+      }
+      return changed ? newWidths : prev;
+    });
+  }, [initialWidths]);
+
   // 1. Define handleMouseMove first (no dependencies)
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!resizingRef.current) return;
