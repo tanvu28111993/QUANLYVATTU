@@ -14,6 +14,8 @@ var ID_SHEET_SKUN = "1HfJ6c48d0BhIsdKdCIZdq6JOBC7UHrszv-A8eI45ORM";
 var CACHE_EXPIRATION_SEC = 300; 
 var CACHE_KEY_PREFIX = "INVENTORY_CHUNK_";
 var CACHE_META_KEY = "INVENTORY_META";
+var CACHE_USERS_KEY = "USERS_DATA";
+var CACHE_METADATA_KEY = "METADATA_DATA";
 
 // Helper để parse params từ Event
 function getParams(e) {
@@ -85,6 +87,10 @@ function handleUpdate(payload) {
 }
 
 function handleUpdateMetaData(params) {
+    try {
+      var cache = CacheService.getScriptCache();
+      cache.remove(CACHE_METADATA_KEY);
+    } catch (e) {}
     return responseJSON({ success: true, message: "Read-only mode: Metadata updated (simulated)" });
 }
 
@@ -119,6 +125,12 @@ function handleCheckHealth() {
 
 function handleGetMetaData() {
   try {
+    var cache = CacheService.getScriptCache();
+    var cached = cache.get(CACHE_METADATA_KEY);
+    if (cached) {
+      return responseJSON({ success: true, data: JSON.parse(cached), fromCache: true });
+    }
+
     var ss = SpreadsheetApp.openById(ID_SHEET_DANHMUC);
     
     var readSheet = function(sheetName, numCols) {
@@ -157,6 +169,11 @@ function handleGetMetaData() {
       debugSheets: allSheetNames // Return list of sheets for debugging
     };
 
+    // Cache the metadata
+    try {
+      cache.put(CACHE_METADATA_KEY, JSON.stringify(data), CACHE_EXPIRATION_SEC);
+    } catch (e) {}
+
     return responseJSON({ success: true, data: data });
   } catch (err) {
     return responseJSON({ success: false, message: err.message, data: {} });
@@ -169,20 +186,37 @@ function handleLogin(params) {
   
   if (!username || !password) return responseJSON({ success: false, message: "Thiếu thông tin" });
 
-  var ss = SpreadsheetApp.openById(ID_SHEET_DANG_NHAP);
-  var sheet = ss.getSheetByName("DN"); // Assuming the sheet name is still "DN" or default
-  if (!sheet) sheet = ss.getSheets()[0]; // Fallback to first sheet if DN not found
+  // 1. Check Cache first
+  var cache = CacheService.getScriptCache();
+  var cachedUsers = cache.get(CACHE_USERS_KEY);
+  var usersData = null;
+  var headers = null;
 
-  var lastRow = sheet.getLastRow();
-  var lastCol = sheet.getLastColumn();
-  if (lastRow < 2 || lastCol < 1) return responseJSON({ success: false, message: "Lỗi hệ thống hoặc chưa có dữ liệu user" });
+  if (cachedUsers) {
+    var parsed = JSON.parse(cachedUsers);
+    usersData = parsed.data;
+    headers = parsed.headers;
+  } else {
+    // 2. If not in cache, read from Spreadsheet
+    var ss = SpreadsheetApp.openById(ID_SHEET_DANG_NHAP);
+    var sheet = ss.getSheetByName("DN"); 
+    if (!sheet) sheet = ss.getSheets()[0]; 
+
+    var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
+    if (lastRow < 2 || lastCol < 1) return responseJSON({ success: false, message: "Lỗi hệ thống hoặc chưa có dữ liệu user" });
+    
+    headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+    usersData = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+    
+    // Cache the data
+    try {
+      cache.put(CACHE_USERS_KEY, JSON.stringify({ data: usersData, headers: headers }), CACHE_EXPIRATION_SEC);
+    } catch (e) {}
+  }
   
-  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
-  var data = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
-  
-  for (var i = 0; i < data.length; i++) {
-    // Basic auth check: assume column 0 is username, column 1 is password
-    if (String(data[i][0]) == username && String(data[i][1]) == password) {
+  for (var i = 0; i < usersData.length; i++) {
+    if (String(usersData[i][0]) == username && String(usersData[i][1]) == password) {
       var userObj = {
         username: username,
         password: password
@@ -190,7 +224,7 @@ function handleLogin(params) {
       for (var j = 2; j < headers.length; j++) {
         var header = headers[j];
         if (!header) continue;
-        var val = data[i][j];
+        var val = usersData[i][j];
         if (val === true || String(val).toUpperCase() === 'TRUE') {
           userObj[header] = true;
         } else if (val === false || String(val).toUpperCase() === 'FALSE') {
@@ -210,6 +244,13 @@ function handleLogin(params) {
 
 function handleGetUsers() {
   try {
+    var cache = CacheService.getScriptCache();
+    var cached = cache.get(CACHE_USERS_KEY);
+    if (cached) {
+      var parsed = JSON.parse(cached);
+      return responseJSON({ success: true, data: parsed.data, headers: parsed.headers, fromCache: true });
+    }
+
     var ss = SpreadsheetApp.openById(ID_SHEET_DANG_NHAP);
     var sheet = ss.getSheetByName("DN");
     if (!sheet) return responseJSON({ success: false, message: "Không tìm thấy sheet DN" });
@@ -253,6 +294,12 @@ function handleGetUsers() {
       }
       users.push(userObj);
     }
+
+    // Cache the data
+    try {
+      cache.put(CACHE_USERS_KEY, JSON.stringify({ data: users, headers: headers }), CACHE_EXPIRATION_SEC);
+    } catch (e) {}
+
     return responseJSON({ success: true, data: users, headers: headers });
   } catch (err) {
     return responseJSON({ success: false, message: err.message });
@@ -328,6 +375,12 @@ function handleUpdateUser(params) {
     } else {
       return responseJSON({ success: false, message: "Operation không hợp lệ" });
     }
+
+    // Clear cache after update
+    try {
+      var cache = CacheService.getScriptCache();
+      cache.remove(CACHE_USERS_KEY);
+    } catch (e) {}
 
     return responseJSON({ success: true, message: "Cập nhật thành công" });
   } catch (err) {
