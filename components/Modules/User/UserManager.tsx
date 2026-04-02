@@ -16,10 +16,7 @@ export const UserManager: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedUsernames, setSelectedUsernames] = useState<Set<string>>(new Set());
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [newUser, setNewUser] = useState<User>({
-    username: '',
-    password: '',
-  });
+  const [newUser, setNewUser] = useState<User>({});
 
   const { data, isLoading, isFetching, error } = useQuery({
     queryKey: ['users'],
@@ -29,10 +26,65 @@ export const UserManager: React.FC = () => {
   const users = data?.users || [];
   const headers = data?.headers || [];
 
+  const getValByHeader = (u: any, header: string, index: number) => {
+    if (!u) return '';
+    if (typeof u === 'string') return index === 0 ? u : '';
+    
+    const search = (obj: any): any => {
+      if (!obj) return undefined;
+      if (typeof obj !== 'object') return obj;
+      
+      let val = undefined;
+      if (Array.isArray(obj)) {
+        val = obj[index];
+      } else {
+        if (obj[header] !== undefined) val = obj[header];
+        else {
+          const keys = Object.keys(obj);
+          const target = (header || '').toLowerCase().trim();
+          const foundKey = keys.find(k => (k || '').toLowerCase().trim() === target);
+          if (foundKey) val = obj[foundKey];
+          else if (obj[index] !== undefined) val = obj[index];
+          else if (obj[String(index)] !== undefined) val = obj[String(index)];
+        }
+      }
+      
+      // Handle { v: value } structure common in some GAS responses
+      if (val && typeof val === 'object' && !Array.isArray(val) && val.v !== undefined) return val.v;
+      return val;
+    };
+
+    let val = search(u);
+    if (val === undefined && u.data) val = search(u.data);
+    if (val === undefined && u.values) val = search(u.values);
+    if (val === undefined && u.row) val = search(u.row);
+    if (val === undefined && u.c) val = search(u.c); // Common in GAS
+    
+    return val !== undefined ? val : '';
+  };
+
+  const getUsername = (u: User) => {
+    if (!u) return '';
+    if (u.username !== undefined && !Array.isArray(u)) return u.username;
+    return getValByHeader(u, headers[0], 0);
+  };
+  
+  const getPassword = (u: User) => {
+    if (!u) return '';
+    if (u.password !== undefined && !Array.isArray(u)) return u.password;
+    return getValByHeader(u, headers[1], 1);
+  };
+
+  const getPermissionVal = (u: User, item: { key: string, originalKey: string, index: number }) => {
+    if (!u) return undefined;
+    return getValByHeader(u, item.originalKey, item.index);
+  };
+
   const USER_COLUMNS = useMemo(() => {
     if (headers.length === 0) return [];
     return headers.map((header, index) => ({
-      key: header,
+      key: `${header}-${index}`,
+      originalKey: header,
       header: header.toUpperCase(),
       width: index < 2 ? (index === 0 ? 200 : 150) : 150
     }));
@@ -40,27 +92,31 @@ export const UserManager: React.FC = () => {
 
   const permissionKeys = useMemo(() => {
     if (headers.length <= 2) return [];
-    return headers.slice(2);
+    return headers.slice(2).map((header, index) => ({
+      key: `${header}-${index + 2}`,
+      originalKey: header,
+      index: index + 2
+    }));
   }, [headers]);
 
   const columnTypes = useMemo(() => {
     const types: Record<string, 'boolean' | 'string'> = {};
-    permissionKeys.forEach(key => {
+    permissionKeys.forEach(item => {
       let hasString = false;
       for (const user of users) {
-        const val = user[key];
+        const val = getPermissionVal(user, item);
         if (typeof val === 'string' && val !== '' && val.toUpperCase() !== 'TRUE' && val.toUpperCase() !== 'FALSE') {
           hasString = true;
           break;
         }
       }
-      types[key] = hasString ? 'string' : 'boolean';
+      types[item.key] = hasString ? 'string' : 'boolean';
     });
     return types;
   }, [permissionKeys, users]);
 
-  const textFields = useMemo(() => permissionKeys.filter(key => columnTypes[key] === 'string'), [permissionKeys, columnTypes]);
-  const booleanFields = useMemo(() => permissionKeys.filter(key => columnTypes[key] === 'boolean'), [permissionKeys, columnTypes]);
+  const textFields = useMemo(() => permissionKeys.filter(item => columnTypes[item.key] === 'string'), [permissionKeys, columnTypes]);
+  const booleanFields = useMemo(() => permissionKeys.filter(item => columnTypes[item.key] === 'boolean'), [permissionKeys, columnTypes]);
 
   const initialWidths = useMemo(() => {
     const widths: Record<string, number> = {};
@@ -89,7 +145,7 @@ export const UserManager: React.FC = () => {
   });
 
   const filteredUsers = useMemo(() => {
-    return users.filter(u => u.username.toLowerCase().includes(searchTerm.toLowerCase()));
+    return users.filter(u => String(getUsername(u)).toLowerCase().includes((searchTerm || '').toLowerCase()));
   }, [users, searchTerm]);
 
   const handleSelectRow = (username: string) => {
@@ -104,7 +160,7 @@ export const UserManager: React.FC = () => {
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      setSelectedUsernames(new Set(filteredUsers.map(u => u.username)));
+      setSelectedUsernames(new Set(filteredUsers.map(u => getUsername(u))));
     } else {
       setSelectedUsernames(new Set());
     }
@@ -113,13 +169,13 @@ export const UserManager: React.FC = () => {
   const handleBulkDelete = () => {
     if (selectedUsernames.size === 0) return;
     
-    const usersToDelete = users.filter(u => selectedUsernames.has(u.username));
+    const usersToDelete = users.filter(u => selectedUsernames.has(getUsername(u)));
     
     usersToDelete.forEach(user => {
       // Optimistic update
       queryClient.setQueryData(['users'], (old: User[] | undefined) => {
         if (!old) return old;
-        return old.filter(u => u.username !== user.username);
+        return old.filter(u => getUsername(u) !== getUsername(user));
       });
 
       updateMutation.mutate({ user, operation: 'delete' });
@@ -131,7 +187,7 @@ export const UserManager: React.FC = () => {
   const handleEditClick = () => {
     if (selectedUsernames.size !== 1) return;
     const username = Array.from(selectedUsernames)[0];
-    const userToEdit = users.find(u => u.username === username);
+    const userToEdit = users.find(u => getUsername(u) === username);
     if (userToEdit) {
       setEditingUser({ ...userToEdit });
       setIsEditing(true);
@@ -152,7 +208,7 @@ export const UserManager: React.FC = () => {
       if (!old) return old;
       return {
         ...old,
-        users: old.users.map(u => u.username === editingUser.username ? editingUser : u)
+        users: old.users.map(u => getUsername(u) === getUsername(editingUser) ? editingUser : u)
       };
     });
 
@@ -160,13 +216,13 @@ export const UserManager: React.FC = () => {
   };
 
   const handleAdd = () => {
-    if (!newUser.username) {
+    if (!getUsername(newUser)) {
       addToast('Vui lòng nhập tên đăng nhập', 'warning');
       return;
     }
     
     // Check if user already exists in local state to prevent duplicate keys
-    const exists = users.some(u => u.username.toLowerCase() === newUser.username.toLowerCase());
+    const exists = users.some(u => String(getUsername(u)).toLowerCase() === String(getUsername(newUser)).toLowerCase());
     if (exists) {
       addToast('Tài khoản đã tồn tại trong danh sách', 'error');
       return;
@@ -177,10 +233,7 @@ export const UserManager: React.FC = () => {
     const userToAdd = { ...newUser };
     
     // Reset form
-    setNewUser({
-      username: '',
-      password: '',
-    });
+    setNewUser({});
 
     // Optimistic update
     queryClient.setQueryData(['users'], (old: { users: User[], headers: string[] } | undefined) => {
@@ -241,31 +294,37 @@ export const UserManager: React.FC = () => {
                 <label className="block text-xs text-gray-400 uppercase mb-2">{headers[0] || 'Tên đăng nhập'}</label>
                 <input 
                   type="text" 
-                  value={newUser.username}
-                  onChange={e => setNewUser({...newUser, username: e.target.value})}
+                  value={getUsername(newUser)}
+                  onChange={e => {
+                    const key = headers[0] || 'username';
+                    setNewUser({...newUser, [key]: e.target.value});
+                  }}
                   className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-3 text-sm focus:border-brand-purple outline-none transition-colors"
-                  placeholder={`Nhập ${headers[0] ? headers[0].toLowerCase() : 'tên đăng nhập'}...`}
+                  placeholder={`Nhập ${headers[0] ? String(headers[0]).toLowerCase() : 'tên đăng nhập'}...`}
                 />
               </div>
               <div>
                 <label className="block text-xs text-gray-400 uppercase mb-2">{headers[1] || 'Mật khẩu'}</label>
                 <input 
                   type="text" 
-                  value={newUser.password}
-                  onChange={e => setNewUser({...newUser, password: e.target.value})}
+                  value={getPassword(newUser)}
+                  onChange={e => {
+                    const key = headers[1] || 'password';
+                    setNewUser({...newUser, [key]: e.target.value});
+                  }}
                   className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-3 text-sm focus:border-brand-purple outline-none transition-colors"
-                  placeholder={`Nhập ${headers[1] ? headers[1].toLowerCase() : 'mật khẩu'}...`}
+                  placeholder={`Nhập ${headers[1] ? String(headers[1]).toLowerCase() : 'mật khẩu'}...`}
                 />
               </div>
               {textFields.map(field => (
-                <div key={field}>
-                  <label className="block text-xs text-gray-400 uppercase mb-2">{field}</label>
+                <div key={field.key}>
+                  <label className="block text-xs text-gray-400 uppercase mb-2">{field.originalKey}</label>
                   <input 
                     type="text" 
-                    value={newUser[field] as string || ''}
-                    onChange={e => setNewUser({...newUser, [field]: e.target.value})}
+                    value={newUser[field.originalKey] as string || ''}
+                    onChange={e => setNewUser({...newUser, [field.originalKey]: e.target.value})}
                     className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-3 text-sm focus:border-brand-purple outline-none transition-colors"
-                    placeholder={`Nhập ${field.toLowerCase()}...`}
+                    placeholder={`Nhập ${String(field.originalKey).toLowerCase()}...`}
                   />
                 </div>
               ))}
@@ -275,24 +334,24 @@ export const UserManager: React.FC = () => {
               <div className="mb-2">
                 <label className="block text-xs text-gray-400 uppercase mb-3">Phân quyền truy cập</label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 bg-slate-950/50 p-4 rounded-lg border border-white/5">
-                  {booleanFields.map((key) => (
-                    <label key={key} className="flex items-center gap-3 cursor-pointer group">
+                  {booleanFields.map((field) => (
+                    <label key={field.key} className="flex items-center gap-3 cursor-pointer group">
                       <div className="relative flex items-center justify-center">
                         <input 
                           type="checkbox" 
-                          checked={newUser[key] as boolean || false}
-                          onChange={e => setNewUser({...newUser, [key]: e.target.checked})}
+                          checked={newUser[field.originalKey] as boolean || false}
+                          onChange={e => setNewUser({...newUser, [field.originalKey]: e.target.checked})}
                           className="sr-only"
                         />
                         <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                          newUser[key] 
+                          newUser[field.originalKey] 
                             ? 'bg-brand-purple border-brand-purple' 
                             : 'bg-slate-900 border-white/20 group-hover:border-brand-purple/50'
                         }`}>
-                          {newUser[key] && <CheckSquare className="w-4 h-4 text-white" />}
+                          {newUser[field.originalKey] && <CheckSquare className="w-4 h-4 text-white" />}
                         </div>
                       </div>
-                      <span className="text-sm text-gray-300 group-hover:text-white transition-colors">{key}</span>
+                      <span className="text-sm text-gray-300 group-hover:text-white transition-colors">{field.originalKey}</span>
                     </label>
                   ))}
                 </div>
@@ -324,7 +383,7 @@ export const UserManager: React.FC = () => {
           <div className="bg-slate-900 border border-orange-500/30 p-6 rounded-xl w-full max-w-4xl shadow-2xl animate-fade-in">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-orange-500 flex items-center gap-2">
-                <Edit className="w-6 h-6" /> Phân quyền người dùng: <span className="text-white">{editingUser.username}</span>
+                <Edit className="w-6 h-6" /> Phân quyền người dùng: <span className="text-white">{getUsername(editingUser)}</span>
               </h3>
               <button onClick={() => setIsEditing(false)} className="text-gray-400 hover:text-white transition-colors">
                 <X className="w-6 h-6" />
@@ -336,7 +395,7 @@ export const UserManager: React.FC = () => {
                 <label className="block text-xs text-gray-400 uppercase mb-2">{headers[0] || 'Tên đăng nhập'}</label>
                 <input 
                   type="text" 
-                  value={editingUser.username}
+                  value={getUsername(editingUser)}
                   disabled
                   className="w-full bg-slate-950/50 border border-white/5 rounded-lg px-4 py-3 text-sm text-gray-500 cursor-not-allowed outline-none"
                 />
@@ -345,21 +404,24 @@ export const UserManager: React.FC = () => {
                 <label className="block text-xs text-gray-400 uppercase mb-2">{headers[1] || 'Mật khẩu'}</label>
                 <input 
                   type="text" 
-                  value={editingUser.password}
-                  onChange={e => setEditingUser({...editingUser, password: e.target.value})}
+                  value={getPassword(editingUser)}
+                  onChange={e => {
+                    const key = headers[1] || 'password';
+                    setEditingUser({...editingUser, [key]: e.target.value});
+                  }}
                   className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-3 text-sm focus:border-orange-500 outline-none transition-colors"
-                  placeholder={`Nhập ${headers[1] ? headers[1].toLowerCase() : 'mật khẩu mới'}...`}
+                  placeholder={`Nhập ${headers[1] ? String(headers[1]).toLowerCase() : 'mật khẩu mới'}...`}
                 />
               </div>
               {textFields.map(field => (
-                <div key={field}>
-                  <label className="block text-xs text-gray-400 uppercase mb-2">{field}</label>
+                <div key={field.key}>
+                  <label className="block text-xs text-gray-400 uppercase mb-2">{field.originalKey}</label>
                   <input 
                     type="text" 
-                    value={editingUser[field] as string || ''}
-                    onChange={e => setEditingUser({...editingUser, [field]: e.target.value})}
+                    value={editingUser[field.originalKey] as string || ''}
+                    onChange={e => setEditingUser({...editingUser, [field.originalKey]: e.target.value})}
                     className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-3 text-sm focus:border-orange-500 outline-none transition-colors"
-                    placeholder={`Nhập ${field.toLowerCase()}...`}
+                    placeholder={`Nhập ${String(field.originalKey).toLowerCase()}...`}
                   />
                 </div>
               ))}
@@ -369,24 +431,24 @@ export const UserManager: React.FC = () => {
               <div className="mb-2">
                 <label className="block text-xs text-gray-400 uppercase mb-3">Phân quyền truy cập</label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 bg-slate-950/50 p-4 rounded-lg border border-white/5">
-                  {booleanFields.map((key) => (
-                    <label key={key} className="flex items-center gap-3 cursor-pointer group">
+                  {booleanFields.map((field) => (
+                    <label key={field.key} className="flex items-center gap-3 cursor-pointer group">
                       <div className="relative flex items-center justify-center">
                         <input 
                           type="checkbox" 
-                          checked={editingUser[key] as boolean || false}
-                          onChange={e => setEditingUser({...editingUser, [key]: e.target.checked})}
+                          checked={editingUser[field.originalKey] as boolean || false}
+                          onChange={e => setEditingUser({...editingUser, [field.originalKey]: e.target.checked})}
                           className="sr-only"
                         />
                         <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                          editingUser[key] 
+                          editingUser[field.originalKey] 
                             ? 'bg-orange-500 border-orange-500' 
                             : 'bg-slate-900 border-white/20 group-hover:border-orange-500/50'
                         }`}>
-                          {editingUser[key] && <CheckSquare className="w-4 h-4 text-white" />}
+                          {editingUser[field.originalKey] && <CheckSquare className="w-4 h-4 text-white" />}
                         </div>
                       </div>
-                      <span className="text-sm text-gray-300 group-hover:text-white transition-colors">{key}</span>
+                      <span className="text-sm text-gray-300 group-hover:text-white transition-colors">{field.originalKey}</span>
                     </label>
                   ))}
                 </div>
@@ -417,6 +479,14 @@ export const UserManager: React.FC = () => {
         {/* Toolbar */}
         <div className="p-4 border-b border-gray-800 bg-slate-950/50 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
+            {selectedUsernames.size > 0 && (
+              <span className="text-sm text-gray-400 ml-2 whitespace-nowrap animate-fade-in">
+                Đã chọn <span className="text-brand-purple font-bold">{selectedUsernames.size}</span> người dùng
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
             <button 
               onClick={() => { setIsAdding(!isAdding); setIsEditing(false); }}
               className="h-10 px-4 flex items-center gap-2 bg-brand-purple hover:bg-brand-purple/80 border border-brand-purple/50 text-white rounded-lg text-sm font-medium transition-all hover:shadow-lg active:scale-95 whitespace-nowrap shadow-lg shadow-brand-purple/20"
@@ -443,23 +513,19 @@ export const UserManager: React.FC = () => {
               <span className="hidden sm:inline">Xóa</span>
             </button>
 
-            {selectedUsernames.size > 0 && (
-              <span className="text-sm text-gray-400 ml-2">Đã chọn {selectedUsernames.size}</span>
-            )}
-          </div>
+            <div className="h-6 w-px bg-gray-800 mx-1"></div>
 
-          <div className="flex items-center gap-3">
-            <div className="relative w-[300px]">
+            <div className="relative w-full max-w-[250px] lg:max-w-[300px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
               <input 
                 type="text" 
-                placeholder="Tìm kiếm người dùng..." 
+                placeholder="Tìm kiếm..." 
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-brand-purple transition-all placeholder:text-gray-600"
               />
             </div>
-            
+
             <button 
               onClick={() => queryClient.invalidateQueries({ queryKey: ['users'] })}
               className="h-10 px-4 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 border border-blue-500 text-white rounded-lg transition-all hover:shadow-lg active:scale-95 whitespace-nowrap"
@@ -506,15 +572,15 @@ export const UserManager: React.FC = () => {
               {filteredUsers.length > 0 ? (
                 filteredUsers.map((user, index) => (
                   <tr 
-                    key={user.username} 
-                    onClick={() => handleSelectRow(user.username)}
-                    className={`h-[36px] transition-all duration-75 group border-l-4 cursor-pointer hover:bg-brand-purple/20 ${selectedUsernames.has(user.username) ? 'bg-brand-purple/10 border-l-brand-purple' : 'border-transparent'} ${index % 2 === 0 ? '' : 'bg-slate-800/30'}`}
+                    key={getUsername(user)} 
+                    onClick={() => handleSelectRow(getUsername(user))}
+                    className={`h-[36px] transition-all duration-75 group border-l-4 cursor-pointer hover:bg-brand-purple/20 ${selectedUsernames.has(getUsername(user)) ? 'bg-brand-purple/10 border-l-brand-purple' : 'border-transparent'} ${index % 2 === 0 ? '' : 'bg-slate-800/30'}`}
                   >
                     <td className="px-4 py-0 border-r border-gray-800 group-hover:border-gray-700 text-center" style={{ width: 50 }} onClick={(e) => e.stopPropagation()}>
                       <input 
                         type="checkbox" 
-                        checked={selectedUsernames.has(user.username)}
-                        onChange={() => handleSelectRow(user.username)}
+                        checked={selectedUsernames.has(getUsername(user))}
+                        onChange={() => handleSelectRow(getUsername(user))}
                         className="w-4 h-4 rounded border-gray-600 bg-slate-800 text-brand-purple focus:ring-brand-purple/50 cursor-pointer"
                       />
                     </td>
@@ -523,7 +589,7 @@ export const UserManager: React.FC = () => {
                       className="px-4 py-0 text-gray-300 text-sm font-bold border-r border-gray-800 group-hover:border-gray-700 overflow-hidden whitespace-nowrap"
                     >
                       <div className="flex items-center h-full w-full">
-                        <span className="w-full truncate text-left">{user.username}</span>
+                        <span className="w-full truncate text-left">{getUsername(user)}</span>
                       </div>
                     </td>
                     <td 
@@ -531,19 +597,19 @@ export const UserManager: React.FC = () => {
                       className="px-4 py-0 border-r border-gray-800 group-hover:border-gray-700 overflow-hidden whitespace-nowrap"
                     >
                       <div className="flex items-center h-full w-full">
-                        <span className="w-full truncate text-left text-sm font-bold text-orange-500">{user.password || '-'}</span>
+                        <span className="w-full truncate text-left text-sm font-bold text-orange-500">{getPassword(user) || '-'}</span>
                       </div>
                     </td>
                     
                     {/* Dynamic Columns */}
                     {permissionKeys.map(field => {
-                      const isBoolean = columnTypes[field] === 'boolean';
-                      const val = user[field];
+                      const isBoolean = columnTypes[field.key] === 'boolean';
+                      const val = getPermissionVal(user, field);
                       
                       return (
                         <td 
-                          key={field} 
-                          style={{ width: colWidths[field] || 150 }}
+                          key={field.key} 
+                          style={{ width: colWidths[field.key] || 150 }}
                           className={`px-4 py-0 border-r border-gray-800 group-hover:border-gray-700 overflow-hidden whitespace-nowrap ${isBoolean ? 'text-center' : 'text-left'}`}
                         >
                           <div className={`flex items-center h-full w-full ${isBoolean ? 'justify-center' : 'justify-start'}`}>
